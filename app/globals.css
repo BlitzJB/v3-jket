@@ -2,20 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+body {
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 168 24% 98%;
+    --foreground: 168 60% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 168 60% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 168 60% 7%;
+    --primary: 168 45% 17%;
+    --primary-foreground: 168 24% 98%;
+    --secondary: 168 24% 94%;
+    --secondary-foreground: 168 45% 17%;
+    --muted: 168 24% 94%;
+    --muted-foreground: 168 24% 40%;
+    --accent: 168 24% 94%;
+    --accent-foreground: 168 45% 17%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 72% 29%;
+    --success-foreground: 144 70% 96%;
+    --border: 168 20% 88%;
+    --input: 168 20% 88%;
+    --ring: 168 45% 17%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 168 45% 7%;
+    --foreground: 168 24% 98%;
+    --card: 168 45% 10%;
+    --card-foreground: 168 24% 98%;
+    --popover: 168 45% 10%;
+    --popover-foreground: 168 24% 98%;
+    --primary: 168 45% 17%;
+    --primary-foreground: 168 24% 98%;
+    --secondary: 168 24% 14%;
+    --secondary-foreground: 168 24% 98%;
+    --muted: 168 24% 14%;
+    --muted-foreground: 168 24% 64%;
+    --accent: 168 24% 14%;
+    --accent-foreground: 168 24% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 72% 29%;
+    --success-foreground: 144 70% 96%;
+    --border: 168 24% 14%;
+    --input: 168 24% 14%;
+    --ring: 168 45% 17%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0%;
+  }
+  50% {
+    top: calc(100% - 6px);
+  }
+  100% {
+    top: 0%;
+  }
+}
+
+.animate-scan {
+  animation: scan 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    hsl(var(--primary) / 0.3) 50%,
+    transparent 100%
+  );
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.5);
 }
