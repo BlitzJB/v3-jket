@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   return withPermission('support:write', async () => {
-    const { engineerId, serviceVisitDate, typeOfIssue, totalCost } = await req.json()
+    const { engineerId, serviceVisitDate, typeOfIssue, customerSupportNotes } = await req.json()
 
     // Validate request exists
     const request = await prisma.serviceRequest.findUnique({
@@ -36,7 +36,7 @@ export async function POST(
         },
         serviceVisitDate: new Date(serviceVisitDate),
         typeOfIssue,
-        totalCost,
+        customerSupportNotes,
         status: 'PENDING',
       },
     })

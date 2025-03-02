@@ -4,6 +4,8 @@ import {
   ClipboardList,
   History,
   Users,
+  Clock,
+  Package2,
 } from "lucide-react"
 
 const supportNavItems = [
@@ -26,6 +28,21 @@ const supportNavItems = [
     title: "Users",
     href: "/dashboard/customer-service/users",
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    title: "Expiring Overview",
+    href: "/dashboard/customer-service/machine-expiry",
+    icon: <LayoutDashboard className="h-4 w-4" />,
+  },
+  {
+    title: "All Machines",
+    href: "/dashboard/customer-service/machine-expiry/machines",
+    icon: <Package2 className="h-4 w-4" />,
+  },
+  {
+    title: "Expiring Machines",
+    href: "/dashboard/customer-service/machine-expiry/machines/expiring",
+    icon: <Clock className="h-4 w-4" />,
   },
 ]
 

@@ -26,7 +26,7 @@ export function usePdfGenerator(): UsePdfGeneratorReturn {
     setIsGenerating(true)
 
     try {
-      const response = await fetch('https://blitz-pdf-renderer.joshuabharathi2k4.workers.dev', {
+      const response = await fetch('http://localhost:3002/generate-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

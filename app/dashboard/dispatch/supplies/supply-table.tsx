@@ -7,13 +7,15 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil } from "lucide-react"
+import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil, File } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { generateDispatchCertificateHTML } from "../components/dispatch-certificate"
+import { usePdfGenerator } from "@/hooks/use-pdf-generator"
 
 interface Supply {
   id: string
@@ -54,7 +56,7 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
   const router = useRouter()
   const [supplies] = useState<Supply[]>(initialSupplies)
   const [search, setSearch] = useState('')
-
+  const { generatePdf } = usePdfGenerator()
   const filteredSupplies = supplies.filter((supply) => {
     const searchLower = search.toLowerCase()
     return (
@@ -65,6 +67,19 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
       supply.distributor.region.toLowerCase().includes(searchLower)
     )
   })
+
+  const handleGenerateDispatchCertificate = async (supply: Supply) => {
+    const html = generateDispatchCertificateHTML({ machine: {
+      serialNumber: supply.machine.serialNumber,
+      machineModel: {
+        name: supply.machine.machineModel.name,
+      }
+    } })
+    const pdfBlob = await generatePdf({ html })
+    const url = URL.createObjectURL(pdfBlob)
+    window.open(url)
+    URL.revokeObjectURL(url)
+  }
 
   const columns = [
     {
@@ -154,6 +169,14 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
             >
               <Eye className="mr-2 h-4 w-4" />
               View Details
+            </DropdownMenuItem>
+            {/* Generate Dispatch Certificate */}
+            <DropdownMenuItem
+              onClick={() => handleGenerateDispatchCertificate(row.original)}
+              className="cursor-pointer"
+            >
+              <File className="mr-2 h-4 w-4" />
+              Generate Dispatch Certificate
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => router.push(`/dashboard/dispatch/supplies/${row.original.id}/edit`)}

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function POST(req: Request) {
   try {
-    const { machineId, complaint } = await req.json()
+    const { machineId, complaint, attachments } = await req.json()
 
     // Validate machine exists and has been sold
     const machine = await prisma.machine.findFirst({
@@ -27,6 +27,7 @@ export async function POST(req: Request) {
       data: {
         machineId,
         complaint,
+        attachments: attachments || [],
       },
       include: {
         machine: {

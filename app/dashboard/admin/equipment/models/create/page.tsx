@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Camera, Loader2, X } from 'lucide-react'
 
 interface FormData {
   name: string
@@ -35,6 +36,7 @@ export default function CreateMachineModelPage() {
   }
 
   const [isLoading, setIsLoading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     shortCode: '',
@@ -43,6 +45,39 @@ export default function CreateMachineModelPage() {
     coverImageUrl: '',
     categoryId,
   })
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/media', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+      setFormData(prev => ({ ...prev, coverImageUrl: data.url }))
+      toast.success('Image uploaded successfully')
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      toast.error('Failed to upload image')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, coverImageUrl: '' }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -188,33 +223,69 @@ export default function CreateMachineModelPage() {
 
             <div className="space-y-2">
               <label
-                htmlFor="coverImageUrl"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Cover Image URL (Optional)
+                Cover Image
               </label>
-              <Input
-                id="coverImageUrl"
-                name="coverImageUrl"
-                type="url"
-                placeholder="Enter image URL"
-                value={formData.coverImageUrl}
-                onChange={handleChange}
-              />
-              <p className="text-sm text-muted-foreground">
-                A URL to an image that represents this model
-              </p>
+              <div className="flex items-start space-x-4">
+                <div className="relative w-40 h-40 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                  {formData.coverImageUrl ? (
+                    <>
+                      <img
+                        src={formData.coverImageUrl}
+                        alt="Cover"
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={removeImage}
+                        className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <Camera className="mx-auto h-8 w-8 text-muted-foreground" />
+                      <label
+                        htmlFor="coverImage"
+                        className="mt-2 cursor-pointer rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                      >
+                        {isUploading ? (
+                          <div className="flex items-center">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Uploading...
+                          </div>
+                        ) : (
+                          'Upload Image'
+                        )}
+                      </label>
+                      <input
+                        type="file"
+                        id="coverImage"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                      />
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        PNG, JPG or WEBP up to 10MB
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end space-x-4 pt-4">
               <Button
                 variant="outline"
                 onClick={() => router.back()}
-                disabled={isLoading}
+                disabled={isLoading || isUploading}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isUploading}>
                 {isLoading ? 'Creating...' : 'Create Model'}
               </Button>
             </div>

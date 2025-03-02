@@ -64,7 +64,7 @@ const ISSUE_TYPES = [
 
 const completeVisitSchema = z.object({
   typeOfIssue: z.enum(ISSUE_TYPES),
-  totalCost: z.string().transform((val) => parseFloat(val)),
+  totalCost: z.coerce.number().min(0),
 })
 
 interface ServiceRequestDetailsProps {
@@ -105,7 +105,7 @@ function CompleteVisitDialog({
     resolver: zodResolver(completeVisitSchema),
     defaultValues: {
       typeOfIssue: undefined,
-      totalCost: "",
+      totalCost: 0,
     },
   })
 
@@ -225,9 +225,41 @@ function CompleteVisitDialog({
   )
 }
 
+interface AttachmentViewerProps {
+  attachment: { url: string; type: 'photo' | 'video' }
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+function AttachmentViewer({ attachment, open, onOpenChange }: AttachmentViewerProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-screen-lg h-[80vh] flex items-center justify-center p-0">
+        {attachment.type === 'photo' ? (
+          <img
+            src={attachment.url}
+            alt="Attachment"
+            className="max-h-full max-w-full object-contain"
+          />
+        ) : (
+          <video
+            src={attachment.url}
+            controls
+            className="max-h-full max-w-full"
+            autoPlay
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export function ServiceRequestDetails({ request }: ServiceRequestDetailsProps) {
   const { machine } = request
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false)
+  const [selectedAttachment, setSelectedAttachment] = useState<{ url: string; type: 'photo' | 'video' } | null>(null)
+
+  console.log(request)
 
   return (
     <div className="container py-8 space-y-8 md:px-12 px-4">
@@ -346,6 +378,33 @@ export function ServiceRequestDetails({ request }: ServiceRequestDetailsProps) {
                 </span>
               </div>
             </div>
+            {request.attachments && (
+              <div>
+                <div className="text-sm text-muted-foreground mb-2">Attachments</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(request.attachments as any[]).map((attachment, index) => (
+                    <div 
+                      key={index} 
+                      className="relative group cursor-pointer" 
+                      onClick={() => setSelectedAttachment(attachment)}
+                    >
+                      {attachment.type === 'photo' ? (
+                        <img
+                          src={attachment.url}
+                          alt={`Attachment ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg hover:opacity-90 transition-opacity"
+                        />
+                      ) : (
+                        <video
+                          src={attachment.url}
+                          className="w-full h-32 object-cover rounded-lg hover:opacity-90 transition-opacity"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -436,6 +495,14 @@ export function ServiceRequestDetails({ request }: ServiceRequestDetailsProps) {
           visit={request.serviceVisit}
           open={completeDialogOpen}
           onOpenChange={setCompleteDialogOpen}
+        />
+      )}
+
+      {selectedAttachment && (
+        <AttachmentViewer
+          attachment={selectedAttachment}
+          open={!!selectedAttachment}
+          onOpenChange={(open) => !open && setSelectedAttachment(null)}
         />
       )}
     </div>

@@ -20,14 +20,26 @@ import { PickerDialog } from './picker-dialog'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Switch } from "@/components/ui/switch"
-import { testCategories } from './test-config'
-import type { Test, TestCategory } from './test-config'
+import { defaultTestConfig } from '@/app/dashboard/admin/equipment/test-config/test-config-manager'
+
+interface Test {
+  id: string
+  name: string
+  type: "both" | "condition"
+}
+
+interface TestGroup {
+  id: string
+  name: string
+  tests: Test[]
+}
 
 interface Category {
   id: string
   name: string
   shortCode: string
   machineModels: MachineModel[]
+  testConfiguration: { groups: TestGroup[] } | null
 }
 
 interface MachineModel {
@@ -53,7 +65,8 @@ interface QATestFormProps {
 
 export function QATestForm({ categories }: QATestFormProps) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState(testCategories[0].name)
+  const [testConfig, setTestConfig] = useState<{ groups: TestGroup[] }>(defaultTestConfig as unknown as { groups: TestGroup[] })
+  const [activeTab, setActiveTab] = useState("")
   const [testResults, setTestResults] = useState<TestResults>({})
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedModel, setSelectedModel] = useState<string>('')
@@ -62,20 +75,31 @@ export function QATestForm({ categories }: QATestFormProps) {
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Initialize test results with default values
+  // Update test configuration when category changes
   useEffect(() => {
-    const initialResults: TestResults = {}
-    testCategories.forEach(category => {
-      category.tests.forEach(test => {
-        initialResults[test.name] = {
-          range: '',
-          condition: '',
-          passed: true,
-        }
-      })
-    })
-    setTestResults(initialResults)
-  }, [])
+    if (selectedCategory) {
+      const category = categories.find(c => c.id === selectedCategory)
+      if (category) {
+        const rawConfig = category.testConfiguration || defaultTestConfig
+        const config = rawConfig as unknown as { groups: TestGroup[] }
+        setTestConfig(config)
+        setActiveTab(config.groups[0]?.name || "")
+        
+        // Initialize test results with default values for the new configuration
+        const initialResults: TestResults = {}
+        config.groups.forEach(group => {
+          group.tests.forEach(test => {
+            initialResults[test.name] = {
+              range: '',
+              condition: '',
+              passed: true,
+            }
+          })
+        })
+        setTestResults(initialResults)
+      }
+    }
+  }, [selectedCategory, categories])
 
   // Reset model when category changes
   useEffect(() => {
@@ -225,85 +249,81 @@ export function QATestForm({ categories }: QATestFormProps) {
             </div>
             <div className="space-y-2">
               <Label>Serial Number</Label>
-              <Input
-                value={serialNumber}
-                readOnly
-                className="bg-muted"
-                placeholder="Will be generated automatically"
-              />
+              <Input value={serialNumber} disabled />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Additional Notes</Label>
+            <Label>Additional Notes</Label>
             <Textarea
-              id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Enter any additional notes"
+              placeholder="Enter any additional notes or observations"
             />
           </div>
         </div>
       </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-4 gap-4">
-          {testCategories.map(category => (
-            <TabsTrigger
-              key={category.name}
-              value={category.name}
-              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-            >
-              {category.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      {selectedCategory && testConfig.groups.length > 0 && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid" style={{ gridTemplateColumns: `repeat(${testConfig.groups.length}, 1fr)` }}>
+            {testConfig.groups.map(group => (
+              <TabsTrigger
+                key={group.name}
+                value={group.name}
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                {group.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {testCategories.map(category => (
-          <TabsContent key={category.name} value={category.name} className="space-y-4">
-            <Card>
-              <div className="p-6 space-y-4">
-                {category.tests.map(test => (
-                  <div key={test.name} className="space-y-4 pb-4 border-b last:border-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">{test.name}</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {testResults[test.name]?.passed !== false ? "Pass" : "Fail"}
-                        </span>
-                        <Switch
-                          checked={testResults[test.name]?.passed !== false}
-                          onCheckedChange={(checked) => handlePassFailChange(test.name, checked)}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {test.type === 'both' && (
-                        <div className="space-y-2">
-                          <Label>Range</Label>
-                          <Input
-                            value={testResults[test.name]?.range || ''}
-                            onChange={(e) => handleInputChange(test.name, 'range', e.target.value)}
-                            placeholder="Enter range"
+          {testConfig.groups.map(group => (
+            <TabsContent key={group.name} value={group.name} className="space-y-4">
+              <Card>
+                <div className="p-6 space-y-4">
+                  {group.tests.map(test => (
+                    <div key={test.name} className="space-y-4 pb-4 border-b last:border-0">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">{test.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {testResults[test.name]?.passed !== false ? "Pass" : "Fail"}
+                          </span>
+                          <Switch
+                            checked={testResults[test.name]?.passed !== false}
+                            onCheckedChange={(checked) => handlePassFailChange(test.name, checked)}
                           />
                         </div>
-                      )}
-                      <div className="space-y-2">
-                        <Label>Condition</Label>
-                        <Input
-                          value={testResults[test.name]?.condition || ''}
-                          onChange={(e) => handleInputChange(test.name, 'condition', e.target.value)}
-                          placeholder="Enter condition"
-                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        {test.type === 'both' && (
+                          <div className="space-y-2">
+                            <Label>Range</Label>
+                            <Input
+                              value={testResults[test.name]?.range || ''}
+                              onChange={(e) => handleInputChange(test.name, 'range', e.target.value)}
+                              placeholder="Enter range"
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <Label>Condition</Label>
+                          <Input
+                            value={testResults[test.name]?.condition || ''}
+                            onChange={(e) => handleInputChange(test.name, 'condition', e.target.value)}
+                            placeholder="Enter condition"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </TabsContent>
-        ))}
-      </Tabs>
+                  ))}
+                </div>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
 
       <div className="flex justify-end space-x-4">
         <Button
@@ -321,3 +341,4 @@ export function QATestForm({ categories }: QATestFormProps) {
     </form>
   )
 } 
+
