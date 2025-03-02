@@ -8,6 +8,11 @@ import {
   Boxes,
   Tags,
   ClipboardCheck,
+  Truck,
+  ShoppingCart,
+  Wrench,
+  Factory,
+  LineChart,
 } from "lucide-react"
 
 // Navigation items for the admin dashboard
@@ -16,6 +21,11 @@ const adminNavItems = [
     title: "Overview",
     href: "/dashboard/admin",
     icon: <BarChart3 className="h-4 w-4" />,
+  },
+  {
+    title: "Analytics",
+    href: "/dashboard/admin/analytics",
+    icon: <LineChart className="h-4 w-4" />,
   },
   {
     title: "User Management",
@@ -43,6 +53,21 @@ const adminNavItems = [
     title: "Test Configuration",
     href: "/dashboard/admin/equipment/test-config",
     icon: <ClipboardCheck className="h-4 w-4" />,
+  },
+  {
+    title: "Dispatch",
+    href: "/dashboard/dispatch",
+    icon: <Truck className="h-4 w-4" />,
+  },
+  {
+    title: "Customer Service",
+    href: "/dashboard/customer-service",
+    icon: <Wrench className="h-4 w-4" />,
+  },
+  {
+    title: "Quality Testing",
+    href: "/dashboard/quality-testing",
+    icon: <ShieldCheck className="h-4 w-4" />,
   },
 ]
 
