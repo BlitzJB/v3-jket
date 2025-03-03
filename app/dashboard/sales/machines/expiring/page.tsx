@@ -54,7 +54,8 @@ async function getExpiringMachinesData() {
         id: supply.id,
         sellBy: supply.sellBy,
         distributor: {
-          name: supply.distributor.name!
+          name: supply.distributor.name!,
+          organizationName: supply.distributor.name!
         }
       }
     }))

@@ -1,13 +1,25 @@
 import { withPermission } from "@/lib/rbac/server"
 import { prisma } from "@/lib/prisma"
 import { HistoryTable } from "./history-table"
+import { ServiceRequestStatus } from "@prisma/client"
 
 async function getClosedRequests() {
   return withPermission("support:read", async () => {
+    // First get all service visits that are closed
+    const serviceVisits = await prisma.serviceVisit.findMany({
+      where: {
+        status: ServiceRequestStatus.CLOSED
+      },
+      select: {
+        serviceRequestId: true
+      }
+    })
+
+    // Then get all service requests with those IDs
     return prisma.serviceRequest.findMany({
       where: {
-        serviceVisit: {
-          status: 'CLOSED'
+        id: {
+          in: serviceVisits.map(sv => sv.serviceRequestId)
         }
       },
       include: {

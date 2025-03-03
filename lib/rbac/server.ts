@@ -1,6 +1,7 @@
 import { type Permission } from './types'
 import { ROLES } from './roles'
 import { auth } from '@/auth'
+import { type UserRole } from '@/types/roles'
 
 export async function hasPermission(permission: Permission): Promise<boolean> {
   console.log("hasPermission", permission)
@@ -11,7 +12,7 @@ export async function hasPermission(permission: Permission): Promise<boolean> {
     return false
   }
 
-  const userRole = session.user.role
+  const userRole = session.user.role as UserRole
   console.log("userRole", userRole)
   if (!userRole || !ROLES[userRole]) {
     console.log("no user role or ROLES[userRole]")

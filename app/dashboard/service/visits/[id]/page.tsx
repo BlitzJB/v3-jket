@@ -16,14 +16,12 @@ async function getVisitDetails(id: string) {
     where: { id },
     include: {
       comments: {
-        
         orderBy: {
           createdAt: 'desc'
         }
       },
       serviceRequest: {
         include: {
-          
           machine: {
             include: {
               machineModel: {
@@ -43,17 +41,32 @@ async function getVisitDetails(id: string) {
     notFound()
   }
 
-  return visit
-}
-
-interface PageProps {
-  params: {
-    id: string
+  // Transform comments data to match the expected type
+  return {
+    ...visit,
+    comments: visit.comments.map(comment => ({
+      id: comment.id,
+      comment: comment.comment,
+      createdAt: comment.createdAt,
+      attachments: (comment.attachments as Array<{ id: string, name: string, objectName: string }> || [])
+        .map(attachment => ({
+          id: attachment.id,
+          name: attachment.name,
+          url: `/api/media/${attachment.objectName}`
+        }))
+    }))
   }
 }
 
+interface PageProps {
+  params: Promise<{
+    id: string
+  }>
+}
+
 export default async function ServiceVisitDetailsPage({ params }: PageProps) {
-  const visit = await getVisitDetails(params.id)
+  const { id } = await params
+  const visit = await getVisitDetails(id)
   const { machine } = visit.serviceRequest
 
   return (

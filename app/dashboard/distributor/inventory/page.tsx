@@ -56,7 +56,27 @@ async function getInventoryData() {
       },
     })
 
+    // Filter out machines where supply is null and map to our interface
     return machines
+      .filter((machine) => machine.supply !== null)
+      .map((machine): Machine => ({
+        id: machine.id,
+        serialNumber: machine.serialNumber,
+        manufacturingDate: machine.manufacturingDate,
+        machineModel: {
+          id: machine.machineModel.id,
+          name: machine.machineModel.name,
+          category: {
+            id: machine.machineModel.category.id,
+            name: machine.machineModel.category.name,
+          },
+        },
+        supply: {
+          id: machine.supply!.id,
+          supplyDate: machine.supply!.supplyDate,
+          sellBy: machine.supply!.sellBy,
+        },
+      }))
   })
 }
 

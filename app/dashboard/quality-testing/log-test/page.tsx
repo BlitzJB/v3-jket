@@ -3,6 +3,31 @@ import { QATestForm } from "./test-form"
 import { prisma } from "@/lib/prisma"
 import { withPermission } from "@/lib/rbac/server"
 
+interface Test {
+  id: string
+  name: string
+  type: "both" | "condition"
+}
+
+interface TestGroup {
+  id: string
+  name: string
+  tests: Test[]
+}
+
+interface Category {
+  id: string
+  name: string
+  shortCode: string
+  machineModels: {
+    id: string
+    name: string
+    shortCode: string
+    categoryId: string
+  }[]
+  testConfiguration: { groups: TestGroup[] } | null
+}
+
 export const metadata: Metadata = {
   title: "Log QA Test | Quality Testing Dashboard",
   description: "Log quality assurance test results for machines",
@@ -10,7 +35,7 @@ export const metadata: Metadata = {
 
 async function getCategories() {
   return withPermission("equipment:read", async () => {
-    return prisma.category.findMany({
+    const categories = await prisma.category.findMany({
       include: {
         machineModels: true,
       },
@@ -18,6 +43,20 @@ async function getCategories() {
         name: 'asc',
       },
     })
+
+    // Map database results to our interface
+    return categories.map((category): Category => ({
+      id: category.id,
+      name: category.name,
+      shortCode: category.shortCode,
+      machineModels: category.machineModels.map(model => ({
+        id: model.id,
+        name: model.name,
+        shortCode: model.shortCode,
+        categoryId: model.categoryId,
+      })),
+      testConfiguration: category.testConfiguration as { groups: TestGroup[] } | null,
+    }))
   })
 }
 

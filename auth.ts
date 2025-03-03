@@ -1,7 +1,6 @@
 import NextAuth from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import { prisma } from '@/lib/prisma'
-import { type Role } from '@/lib/rbac/types'
+import { type UserRole } from '@/types/roles'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 
@@ -15,7 +14,6 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
-  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -23,13 +21,16 @@ export const {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials, request) {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
+        const email = credentials.email as string
+        const password = credentials.password as string
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
           select: {
             id: true,
             email: true,
@@ -45,7 +46,7 @@ export const {
         }
 
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
+          password,
           user.password
         )
 
@@ -57,7 +58,7 @@ export const {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.role as Role,
+          role: user.role as UserRole,
           approved: user.approved,
         }
       }
@@ -83,7 +84,7 @@ export const {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
-        session.user.role = token.role as Role
+        session.user.role = token.role as UserRole
         session.user.approved = token.approved as boolean
       }
       return session

@@ -4,11 +4,12 @@ import { withPermission } from "@/lib/rbac/server"
 
 export async function GET(
   request: Request,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   return withPermission("equipment:read", async () => {
+    const { categoryId } = await params
     const category = await prisma.category.findUnique({
-      where: { id: params.categoryId },
+      where: { id: categoryId },
       select: {
         id: true,
         name: true,

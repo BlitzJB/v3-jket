@@ -4,9 +4,9 @@ import { withPermission } from "@/lib/rbac/server"
 
 export async function PATCH(
   req: Request,
-  context: { params: { modelId: string } }
+  { params }: { params: Promise<{ modelId: string }> }
 ) {
-  const { modelId } = context.params
+  const { modelId } = await params
   
   return withPermission('equipment:write', async () => {
     try {
@@ -50,9 +50,9 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  context: { params: { modelId: string } }
+  { params }: { params: Promise<{ modelId: string }> }
 ) {
-  const { modelId } = context.params
+  const { modelId } = await params
 
   return withPermission('equipment:delete', async () => {
     try {
@@ -83,9 +83,9 @@ export async function DELETE(
 
 export async function GET(
   req: Request,
-  context: { params: { modelId: string } }
+  { params }: { params: Promise<{ modelId: string }> }
 ) {
-  const { modelId } = context.params
+  const { modelId } = await params
 
   return withPermission('equipment:read', async () => {
     try {

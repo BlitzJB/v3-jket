@@ -38,6 +38,17 @@ interface Supply {
   }
 }
 
+interface Distributor {
+  id: string
+  name: string
+  organizationName: string
+  region: string
+}
+
+function isDistributor(item: any): item is Distributor {
+  return 'organizationName' in item && !('serialNumber' in item)
+}
+
 interface PageProps {
   params: Promise<{
     supplyId: string
@@ -163,7 +174,14 @@ export default function EditSupplyPage({ params }: PageProps) {
               <PickerDialog
                 type="distributor"
                 buttonText={selectedDistributor ? selectedDistributor.organizationName : "Select Distributor"}
-                onSelect={setSelectedDistributor}
+                onSelect={(item) => {
+                  if (isDistributor(item)) {
+                    setSelectedDistributor({
+                      id: item.id,
+                      organizationName: item.organizationName,
+                    })
+                  }
+                }}
                 selectedId={selectedDistributor?.id}
               />
             </div>

@@ -100,25 +100,37 @@ export function RequestsTable({ initialRequests }: RequestsTableProps) {
       accessorKey: 'customer',
       header: 'Customer',
       cell: ({ row }: { row: { original: ServiceRequest } }) => {
-        const certificate = row.original.machine.warrantyCertificate
-        const sale = row.original.machine.sale
-        const customerInfo = certificate || sale
+        const { warrantyCertificate, sale } = row.original.machine
 
-        return customerInfo ? (
-          <div className="flex flex-col gap-1">
-            <div className="font-medium">{customerInfo.name || sale?.customerName}</div>
-            {sale && (
+        if (warrantyCertificate) {
+          return (
+            <div className="flex flex-col gap-1">
+              <div className="font-medium">{warrantyCertificate.name}</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                {`${warrantyCertificate.address}, ${warrantyCertificate.state}`}
+              </div>
+            </div>
+          )
+        }
+
+        if (sale) {
+          return (
+            <div className="flex flex-col gap-1">
+              <div className="font-medium">{sale.customerName}</div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-3 w-3" />
                 {sale.customerPhoneNumber}
               </div>
-            )}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              {certificate ? `${certificate.address}, ${certificate.state}` : sale?.customerAddress}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                {sale.customerAddress}
+              </div>
             </div>
-          </div>
-        ) : (
+          )
+        }
+
+        return (
           <div className="text-sm text-muted-foreground">No customer information</div>
         )
       },

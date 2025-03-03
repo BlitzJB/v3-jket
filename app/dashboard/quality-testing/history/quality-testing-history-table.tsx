@@ -308,26 +308,7 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
                         categories={categories}
                         selectedCategory={selectedCategory}
                         onSelect={setSelectedCategory}
-                        trigger={
-                            <Button variant="outline" className="gap-2">
-                                <Filter className="h-4 w-4" />
-                                {selectedCategory ? 
-                                    categories.find(c => c.id === selectedCategory)?.name : 
-                                    "Filter by Category"
-                                }
-                            </Button>
-                        }
                     />
-                    {selectedCategory && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSelectedCategory("")}
-                            className="rounded-full h-6 w-6"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    )}
                     <PickerDialog
                         type="model"
                         categories={categories}
@@ -335,24 +316,15 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
                         selectedModel={selectedModel}
                         onSelect={setSelectedModel}
                         disabled={!selectedCategory}
-                        trigger={
-                            <Button variant="outline" className="gap-2" disabled={!selectedCategory}>
-                                <Filter className="h-4 w-4" />
-                                {selectedModel ? 
-                                    categories
-                                        .find(c => c.id === selectedCategory)
-                                        ?.machineModels.find(m => m.id === selectedModel)?.name : 
-                                    "Filter by Model"
-                                }
-                            </Button>
-                        }
                     />
-                    {selectedModel && (
+                    {(selectedCategory || selectedModel) && (
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setSelectedModel("")}
-                            className="rounded-full h-6 w-6"
+                            onClick={() => {
+                                setSelectedCategory("")
+                                setSelectedModel("")
+                            }}
                         >
                             <X className="h-4 w-4" />
                         </Button>

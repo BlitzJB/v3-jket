@@ -4,7 +4,7 @@ import { VisitsTable } from "./visits-table"
 
 async function getHistoryData() {
   return withPermission("service:read", async () => {
-    return prisma.serviceVisit.findMany({
+    const visits = await prisma.serviceVisit.findMany({
       where: {
         status: {
           in: ['COMPLETED', 'CANCELLED']
@@ -38,6 +38,15 @@ async function getHistoryData() {
         serviceVisitDate: 'desc',
       },
     })
+
+    // Transform the data to handle null complaints
+    return visits.map(visit => ({
+      ...visit,
+      serviceRequest: {
+        ...visit.serviceRequest,
+        complaint: visit.serviceRequest.complaint || 'No complaint specified'
+      }
+    }))
   })
 }
 

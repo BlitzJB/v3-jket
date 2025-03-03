@@ -4,9 +4,9 @@ import { notFound } from "next/navigation"
 import { ServiceRequestDetails } from "./service-request-details"
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 async function getRequestDetails(id: string) {
@@ -47,6 +47,7 @@ async function getRequestDetails(id: string) {
 }
 
 export default async function ServiceRequestDetailsPage({ params }: PageProps) {
-  const request = await getRequestDetails(params.id)
+  const { id } = await params
+  const request = await getRequestDetails(id)
   return <ServiceRequestDetails request={request} />
 } 

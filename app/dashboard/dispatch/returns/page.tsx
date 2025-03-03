@@ -5,9 +5,39 @@ import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import Link from "next/link"
 
+interface Return {
+  id: string
+  returnDate: Date
+  returnReason: string
+  machine: {
+    id: string
+    serialNumber: string
+    machineModel: {
+      id: string
+      name: string
+      shortCode: string
+      category: {
+        id: string
+        name: string
+        shortCode: string
+      }
+    }
+    supply: {
+      id: string
+      supplyDate: Date
+      distributor: {
+        id: string
+        name: string
+        organizationName: string
+        region: string
+      }
+    }
+  }
+}
+
 async function getReturnsData() {
   return withPermission("dispatch:read", async () => {
-    return prisma.return.findMany({
+    const returns = await prisma.return.findMany({
       include: {
         machine: {
           include: {
@@ -28,6 +58,39 @@ async function getReturnsData() {
         returnDate: 'desc',
       },
     })
+
+    // Map database results to our interface
+    return returns
+      .filter(ret => ret.machine.supply !== null)
+      .map(ret => ({
+        id: ret.id,
+        returnDate: ret.returnDate,
+        returnReason: ret.returnReason,
+        machine: {
+          id: ret.machine.id,
+          serialNumber: ret.machine.serialNumber,
+          machineModel: {
+            id: ret.machine.machineModel.id,
+            name: ret.machine.machineModel.name,
+            shortCode: ret.machine.machineModel.shortCode,
+            category: {
+              id: ret.machine.machineModel.category.id,
+              name: ret.machine.machineModel.category.name,
+              shortCode: ret.machine.machineModel.category.shortCode,
+            },
+          },
+          supply: {
+            id: ret.machine.supply!.id,
+            supplyDate: ret.machine.supply!.supplyDate,
+            distributor: {
+              id: ret.machine.supply!.distributor.id,
+              name: ret.machine.supply!.distributor.name || '',
+              organizationName: ret.machine.supply!.distributor.organizationName || '',
+              region: ret.machine.supply!.distributor.region || '',
+            },
+          },
+        },
+      }))
   })
 }
 

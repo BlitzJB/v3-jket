@@ -31,12 +31,10 @@ export default function ScanPage() {
         toast.error('Invalid QR code format. Please try again or enter serial number manually.')
         setIsScanning(true)
       }
+    } else if (result?.error) {
+      console.error(result.error)
+      toast.error('Error accessing camera. Please check permissions and try again.')
     }
-  }
-
-  const handleError = (error: any) => {
-    console.error(error)
-    toast.error('Error accessing camera. Please check permissions and try again.')
   }
 
   return (
@@ -67,7 +65,6 @@ export default function ScanPage() {
                   height: { min: 640, ideal: 1280, max: 1920 }
                 }}
                 onResult={handleScan}
-                onError={handleError}
                 videoId="qr-video"
                 scanDelay={500}
                 videoStyle={{ 

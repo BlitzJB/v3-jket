@@ -301,21 +301,23 @@ export default async function DistributorDashboard() {
               <h2 className="font-semibold">Upcoming Sell-By Dates</h2>
             </div>
             <div className="space-y-4">
-              {data.upcomingSellBy.map((supply: Supply) => (
-                <div key={supply.id} className="flex items-center justify-between">
-                  <div>
-                    <div className="font-medium">
-                      {supply.machine.machineModel.name}
+              {data.upcomingSellBy
+                .filter((supply): supply is (typeof supply & { machine: NonNullable<typeof supply.machine> }) => 
+                  supply.machine !== null
+                )
+                .map((supply) => (
+                  <div key={supply.id} className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">
+                        {supply.machine.serialNumber} - {supply.machine.machineModel.name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Sell by {format(supply.sellBy, "PPP")}
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {supply.machine.serialNumber}
-                    </div>
+                    <Timer className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {format(new Date(supply.sellBy), "MMM d, yyyy")}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </Card>
 

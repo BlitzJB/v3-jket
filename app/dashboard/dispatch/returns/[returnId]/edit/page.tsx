@@ -17,6 +17,7 @@ import { CalendarIcon, Building2, Package } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { useEffect } from "react"
+
 interface Return {
   id: string
   returnDate: string
@@ -71,7 +72,10 @@ export default function EditReturnPage({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!returnData || !returnDate) return
+    if (!returnData || !returnDate) {
+      toast.error("Please select a return date")
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -194,8 +198,8 @@ export default function EditReturnPage({
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={returnDate}
-                    onSelect={(date) => date && setReturnDate(date)}
+                    selected={returnDate || undefined}
+                    onSelect={(date: Date | undefined) => setReturnDate(date ?? null)}
                     initialFocus
                   />
                 </PopoverContent>

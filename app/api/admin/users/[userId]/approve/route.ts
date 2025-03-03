@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma"
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   return withPermission("users:write", async () => {
+    const { userId } = await params
     const { approved } = await req.json()
 
     const user = await prisma.user.update({
-      where: { id: params.userId },
+      where: { id: userId },
       data: { approved },
       select: {
         id: true,

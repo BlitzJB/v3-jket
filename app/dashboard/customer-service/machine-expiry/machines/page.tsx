@@ -32,6 +32,7 @@ async function getMachinesData() {
         },
         distributor: {
           select: {
+            name: true,
             organizationName: true,
             region: true
           }
@@ -58,7 +59,8 @@ async function getMachinesData() {
           id: supply.id,
           sellBy: supply.sellBy,
           distributor: {
-            name: supply.distributor.organizationName || 'Unknown'
+            name: supply.distributor.name || 'Unknown',
+            organizationName: supply.distributor.organizationName || supply.distributor.name || 'Unknown'
           }
         }
       }))

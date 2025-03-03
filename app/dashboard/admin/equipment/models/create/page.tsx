@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -24,7 +24,7 @@ interface FormData {
   categoryId: string
 }
 
-export default function CreateMachineModelPage() {
+function CreateMachineModelForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const categoryId = searchParams.get('categoryId')
@@ -248,50 +248,54 @@ export default function CreateMachineModelPage() {
                     <div className="text-center">
                       <Camera className="mx-auto h-8 w-8 text-muted-foreground" />
                       <label
-                        htmlFor="coverImage"
-                        className="mt-2 cursor-pointer rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                        htmlFor="image"
+                        className="mt-2 cursor-pointer block text-sm font-medium text-muted-foreground hover:text-foreground"
                       >
-                        {isUploading ? (
-                          <div className="flex items-center">
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Uploading...
-                          </div>
-                        ) : (
-                          'Upload Image'
-                        )}
+                        Upload Image
+                        <input
+                          type="file"
+                          id="image"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={handleImageUpload}
+                          disabled={isUploading}
+                        />
                       </label>
-                      <input
-                        type="file"
-                        id="coverImage"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={handleImageUpload}
-                        disabled={isUploading}
-                      />
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        PNG, JPG or WEBP up to 10MB
-                      </p>
+                      {isUploading && (
+                        <div className="mt-2">
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Upload a cover image for the machine model
+              </p>
             </div>
 
-            <div className="flex justify-end space-x-4 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={isLoading || isUploading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading || isUploading}>
-                {isLoading ? 'Creating...' : 'Create Model'}
-              </Button>
-            </div>
+            <Button type="submit" disabled={isLoading || isUploading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Model'
+              )}
+            </Button>
           </CardContent>
         </Card>
       </form>
     </div>
+  )
+}
+
+export default function CreateMachineModelPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateMachineModelForm />
+    </Suspense>
   )
 } 

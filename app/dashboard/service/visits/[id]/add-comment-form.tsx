@@ -7,12 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { Paperclip, Loader2 } from "lucide-react"
-
-interface MediaFile {
-  name: string
-  url: string
-  objectName: string
-}
+import { MediaFile } from "@/types/media-capture"
 
 interface AddCommentFormProps {
   visitId: string
@@ -40,8 +35,8 @@ export function AddCommentForm({ visitId }: AddCommentFormProps) {
         body: JSON.stringify({
           comment,
           attachments: attachments.map(file => ({
-            name: file.name,
-            objectName: file.objectName
+            name: file.file.name,
+            objectName: file.id
           }))
         }),
       })
@@ -66,9 +61,8 @@ export function AddCommentForm({ visitId }: AddCommentFormProps) {
     }
   }
 
-  async function handleCapture(files: MediaFile | MediaFile[]) {
-    const fileArray = Array.isArray(files) ? files : [files]
-    setAttachments(prev => [...prev, ...fileArray])
+  function handleCapture(file: MediaFile) {
+    setAttachments(prev => [...prev, file])
     setShowMediaCapture(false)
   }
 
@@ -92,7 +86,7 @@ export function AddCommentForm({ visitId }: AddCommentFormProps) {
               className="inline-flex items-center gap-2 bg-secondary px-2 py-1 rounded-md text-xs"
             >
               <Paperclip className="h-3 w-3" />
-              {file.name}
+              {file.file.name}
               <button
                 type="button"
                 onClick={() => removeAttachment(index)}

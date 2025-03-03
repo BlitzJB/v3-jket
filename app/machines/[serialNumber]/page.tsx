@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
@@ -71,28 +71,29 @@ interface WarrantyCertificateForm {
   zipCode: string
 }
 
-export default function MachinePage({ params }: { params: { serialNumber: string } }) {
+export default function MachinePage({ params }: { params: Promise<{ serialNumber: string }> }) {
+  const { serialNumber } = use(params)
   const router = useRouter()
   const [machine, setMachine] = useState<Machine | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmittingWarranty, setIsSubmittingWarranty] = useState(false)
-  const [warrantyForm, setWarrantyForm] = useState<WarrantyCertificateForm>({
+  const [loading, setLoading] = useState(true)
+  const [formData, setFormData] = useState<WarrantyCertificateForm>({
     name: '',
     address: '',
     state: '',
-    zipCode: ''
+    zipCode: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { generatePdf, isGenerating } = usePdfGenerator()
 
   useEffect(() => {
     fetchMachineData()
-  }, [params.serialNumber])
+  }, [])
 
   const fetchMachineData = async () => {
     try {
-      const response = await fetch(`/api/machines/${params.serialNumber}`)
-      if (!response.ok) {
-        if (response.status === 404) {
+      const res = await fetch(`/api/machines/${serialNumber}`)
+      if (!res.ok) {
+        if (res.status === 404) {
           toast.error('Machine not found')
           router.push('/customer')
         } else {
@@ -100,12 +101,12 @@ export default function MachinePage({ params }: { params: { serialNumber: string
         }
         return
       }
-      const data = await response.json()
+      const data = await res.json()
       setMachine(data)
       
       // Pre-fill warranty form with sale data if available
       if (data.sale && !data.warrantyCertificate) {
-        setWarrantyForm({
+        setFormData({
           name: data.sale.customerName,
           address: data.sale.customerAddress,
           state: '', // Need to be filled by user
@@ -116,7 +117,7 @@ export default function MachinePage({ params }: { params: { serialNumber: string
       console.error('Error fetching machine data:', error)
       toast.error('Failed to load machine data')
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -148,7 +149,7 @@ export default function MachinePage({ params }: { params: { serialNumber: string
     e.preventDefault()
     if (!machine?.sale) return
 
-    setIsSubmittingWarranty(true)
+    setIsSubmitting(true)
     try {
       const response = await fetch('/api/warranty-certificates', {
         method: 'POST',
@@ -157,7 +158,7 @@ export default function MachinePage({ params }: { params: { serialNumber: string
         },
         body: JSON.stringify({
           machineId: machine.id,
-          ...warrantyForm,
+          ...formData,
           country: 'India' // Default as per schema
         }),
       })
@@ -172,15 +173,41 @@ export default function MachinePage({ params }: { params: { serialNumber: string
       console.error('Error registering warranty:', error)
       toast.error('Failed to register warranty')
     } finally {
-      setIsSubmittingWarranty(false)
+      setIsSubmitting(false)
     }
   }
 
   const handleGenerateWarrantyCertificate = async () => {
-    if (!machine?.warrantyCertificate) return
+    if (!machine?.warrantyCertificate || !machine?.sale) {
+      toast.error('Cannot generate certificate: Missing sale or warranty information')
+      return
+    }
 
     try {
-      const html = generateWarrantyCertificateHTML({ machine })
+      const html = generateWarrantyCertificateHTML({
+        machine: {
+          serialNumber: machine.serialNumber,
+          manufacturingDate: machine.manufacturingDate,
+          machineModel: {
+            name: machine.machineModel.name,
+            warrantyPeriodMonths: machine.machineModel.warrantyPeriodMonths,
+            category: {
+              name: machine.machineModel.category.name
+            }
+          },
+          sale: {
+            saleDate: machine.sale.saleDate
+          },
+          warrantyCertificate: {
+            createdAt: machine.warrantyCertificate.createdAt,
+            name: machine.warrantyCertificate.name,
+            address: machine.warrantyCertificate.address,
+            state: machine.warrantyCertificate.state,
+            zipCode: machine.warrantyCertificate.zipCode,
+            country: machine.warrantyCertificate.country
+          }
+        }
+      })
       const pdfBlob = await generatePdf({ html })
       const url = URL.createObjectURL(pdfBlob)
       window.open(url)
@@ -191,7 +218,7 @@ export default function MachinePage({ params }: { params: { serialNumber: string
     }
   }
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto">
@@ -346,8 +373,8 @@ export default function MachinePage({ params }: { params: { serialNumber: string
                       <Label htmlFor="name">Full Name</Label>
                       <Input
                         id="name"
-                        value={warrantyForm.name}
-                        onChange={(e) => setWarrantyForm(prev => ({ ...prev, name: e.target.value }))}
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                         required
                       />
                     </div>
@@ -355,8 +382,8 @@ export default function MachinePage({ params }: { params: { serialNumber: string
                       <Label htmlFor="address">Address</Label>
                       <Input
                         id="address"
-                        value={warrantyForm.address}
-                        onChange={(e) => setWarrantyForm(prev => ({ ...prev, address: e.target.value }))}
+                        value={formData.address}
+                        onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                         required
                       />
                     </div>
@@ -365,8 +392,8 @@ export default function MachinePage({ params }: { params: { serialNumber: string
                         <Label htmlFor="state">State</Label>
                         <Input
                           id="state"
-                          value={warrantyForm.state}
-                          onChange={(e) => setWarrantyForm(prev => ({ ...prev, state: e.target.value }))}
+                          value={formData.state}
+                          onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value }))}
                           required
                         />
                       </div>
@@ -374,8 +401,8 @@ export default function MachinePage({ params }: { params: { serialNumber: string
                         <Label htmlFor="zipCode">ZIP Code</Label>
                         <Input
                           id="zipCode"
-                          value={warrantyForm.zipCode}
-                          onChange={(e) => setWarrantyForm(prev => ({ ...prev, zipCode: e.target.value }))}
+                          value={formData.zipCode}
+                          onChange={(e) => setFormData(prev => ({ ...prev, zipCode: e.target.value }))}
                           required
                         />
                       </div>
@@ -383,9 +410,9 @@ export default function MachinePage({ params }: { params: { serialNumber: string
                     <Button 
                       type="submit" 
                       className="w-full"
-                      disabled={isSubmittingWarranty}
+                      disabled={isSubmitting}
                     >
-                      {isSubmittingWarranty ? (
+                      {isSubmitting ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                           Registering...
@@ -401,7 +428,7 @@ export default function MachinePage({ params }: { params: { serialNumber: string
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">Service Requests</h3>
                     <Button 
-                      onClick={() => router.push(`/machines/${params.serialNumber}/service-request`)}
+                      onClick={() => router.push(`/machines/${serialNumber}/service-request`)}
                     >
                       Request Service
                     </Button>

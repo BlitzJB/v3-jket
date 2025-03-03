@@ -21,7 +21,7 @@ import {
 interface DataTableProps<TData> {
   columns: {
     accessorKey?: string
-    header?: string
+    header?: string | React.ReactNode | ((props: { column: any }) => React.ReactNode)
     cell?: (props: { row: { original: TData } }) => React.ReactNode
     id?: string
   }[]
@@ -76,7 +76,9 @@ export function DataTable<TData>({
           <TableRow>
             {columns.map((column, index) => (
               <TableHead key={column.id || column.accessorKey || index}>
-                {column.header}
+                {typeof column.header === 'function'
+                  ? column.header({ column })
+                  : column.header}
               </TableHead>
             ))}
           </TableRow>
@@ -106,7 +108,7 @@ export function DataTable<TData>({
                   onClick={() =>
                     setCurrentPage((prev) => Math.max(1, prev - 1))
                   }
-                  disabled={currentPage === 1}
+                  isActive={currentPage !== 1}
                 />
               </PaginationItem>
               <PaginationItem>
@@ -114,7 +116,7 @@ export function DataTable<TData>({
                   onClick={() =>
                     setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                   }
-                  disabled={currentPage === totalPages}
+                  isActive={currentPage !== totalPages}
                 />
               </PaginationItem>
             </PaginationContent>

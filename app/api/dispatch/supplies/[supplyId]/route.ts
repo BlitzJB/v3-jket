@@ -4,12 +4,13 @@ import { withPermission } from "@/lib/rbac/server"
 
 export async function GET(
   request: Request,
-  { params }: { params: { supplyId: string } }
+  { params }: { params: Promise<{ supplyId: string }> }
 ) {
   return withPermission('dispatch:read', async () => {
     try {
+      const { supplyId } = await params
       const supply = await prisma.supply.findUnique({
-        where: { id: params.supplyId },
+        where: { id: supplyId },
         include: {
           machine: {
             include: {
@@ -39,16 +40,17 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { supplyId: string } }
+  { params }: { params: Promise<{ supplyId: string }> }
 ) {
   return withPermission('dispatch:write', async () => {
     try {
+      const { supplyId } = await params
       const body = await request.json()
       const { distributorId, supplyDate, sellBy, notes } = body
 
       // Check if supply exists
       const existingSupply = await prisma.supply.findUnique({
-        where: { id: params.supplyId },
+        where: { id: supplyId },
       })
 
       if (!existingSupply) {
@@ -57,7 +59,7 @@ export async function PATCH(
 
       // Update supply
       const supply = await prisma.supply.update({
-        where: { id: params.supplyId },
+        where: { id: supplyId },
         data: {
           distributor: {
             connect: {

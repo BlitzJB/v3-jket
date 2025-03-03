@@ -17,6 +17,32 @@ import { CalendarIcon } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { PickerDialog } from "../picker-dialog"
 
+interface Machine {
+  id: string
+  serialNumber: string
+  machineModel: {
+    name: string
+    category: {
+      name: string
+    }
+  }
+}
+
+interface Distributor {
+  id: string
+  name: string
+  organizationName: string
+  region: string
+}
+
+function isMachine(item: any): item is Machine {
+  return 'serialNumber' in item && 'machineModel' in item
+}
+
+function isDistributor(item: any): item is Distributor {
+  return 'organizationName' in item && !('serialNumber' in item)
+}
+
 export default function CreateSupplyPage() {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -86,7 +112,15 @@ export default function CreateSupplyPage() {
               <PickerDialog
                 type="machine"
                 buttonText={selectedMachine ? `${selectedMachine.serialNumber} - ${selectedMachine.modelName}` : "Select Machine"}
-                onSelect={setSelectedMachine}
+                onSelect={(item) => {
+                  if (isMachine(item)) {
+                    setSelectedMachine({
+                      id: item.id,
+                      serialNumber: item.serialNumber,
+                      modelName: item.machineModel.name,
+                    })
+                  }
+                }}
                 selectedId={selectedMachine?.id}
               />
             </div>
@@ -96,7 +130,14 @@ export default function CreateSupplyPage() {
               <PickerDialog
                 type="distributor"
                 buttonText={selectedDistributor ? selectedDistributor.organizationName : "Select Distributor"}
-                onSelect={setSelectedDistributor}
+                onSelect={(item) => {
+                  if (isDistributor(item)) {
+                    setSelectedDistributor({
+                      id: item.id,
+                      organizationName: item.organizationName,
+                    })
+                  }
+                }}
                 selectedId={selectedDistributor?.id}
               />
             </div>

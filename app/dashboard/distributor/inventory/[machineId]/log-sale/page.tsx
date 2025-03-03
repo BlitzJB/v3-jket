@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -35,8 +35,9 @@ async function getMachineData(machineId: string) {
 export default function LogSalePage({
   params,
 }: {
-  params: { machineId: string }
+  params: Promise<{ machineId: string }>
 }) {
+  const { machineId } = use(params)
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [machine, setMachine] = useState<Machine | null>(null)
@@ -46,7 +47,7 @@ export default function LogSalePage({
 
   // Load machine data
   useState(() => {
-    getMachineData(params.machineId)
+    getMachineData(machineId)
       .then(setMachine)
       .catch(() => {
         toast.error("Failed to load machine data")
@@ -73,7 +74,7 @@ export default function LogSalePage({
 
     setIsSubmitting(true)
     try {
-      const res = await fetch(`/api/distributor/inventory/${params.machineId}/sale`, {
+      const res = await fetch(`/api/distributor/inventory/${machineId}/sale`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

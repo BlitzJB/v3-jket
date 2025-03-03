@@ -6,7 +6,7 @@ export default async function DefaultDashboard() {
   const session = await auth()
 
   if (!session) {
-    redirect('/login')
+    redirect('/auth/login')
   }
 
   if (session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN') {

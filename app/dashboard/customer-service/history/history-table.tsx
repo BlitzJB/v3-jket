@@ -7,6 +7,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Eye, Search, Phone, MapPin } from "lucide-react"
+import { ServiceRequestStatus } from "@prisma/client"
 
 interface ServiceRequest {
   id: string
@@ -30,18 +31,31 @@ interface ServiceRequest {
       customerName: string
       customerPhoneNumber: string
       customerAddress: string
-      state: string
+      state?: string
     } | null
   }
   serviceVisit: {
     id: string
     serviceVisitDate: Date
-    typeOfIssue: string
-    totalCost: number
+    typeOfIssue: string | null
+    totalCost: number | null
+    status: ServiceRequestStatus
     engineer: {
       name: string | null
+      id: string
+      email: string | null
+      emailVerified: Date | null
+      image: string | null
+      password: string | null
+      role: string
+      approved: boolean
+      phoneNumber: string | null
+      region: string | null
+      organizationName: string | null
+      createdAt: Date
+      updatedAt: Date
     } | null
-  }
+  } | null
 }
 
 interface HistoryTableProps {
@@ -67,10 +81,10 @@ export function HistoryTable({ requests }: HistoryTableProps) {
         request.machine.sale?.customerName,
         request.machine.sale?.customerPhoneNumber,
         request.machine.sale?.state,
-        request.serviceVisit.typeOfIssue,
-        request.serviceVisit.engineer?.name,
-        format(new Date(request.serviceVisit.serviceVisitDate), "MMMM do, yyyy").toLowerCase(),
-        request.serviceVisit.totalCost.toString()
+        request.serviceVisit?.typeOfIssue,
+        request.serviceVisit?.engineer?.name,
+        request.serviceVisit ? format(new Date(request.serviceVisit.serviceVisitDate), "MMMM do, yyyy").toLowerCase() : null,
+        request.serviceVisit?.totalCost?.toString()
       ]
 
       return searchableFields.some(
@@ -136,7 +150,7 @@ export function HistoryTable({ requests }: HistoryTableProps) {
       header: "Issue Type",
       cell: ({ row }: any) => (
         <div className="font-medium">
-          {row.original.serviceVisit.typeOfIssue}
+          {row.original.serviceVisit?.typeOfIssue || 'Not specified'}
         </div>
       ),
     },
@@ -144,10 +158,10 @@ export function HistoryTable({ requests }: HistoryTableProps) {
       accessorKey: "serviceVisit.totalCost",
       header: "Cost",
       cell: ({ row }: any) => {
-        const cost = row.original.serviceVisit.totalCost
+        const cost = row.original.serviceVisit?.totalCost
         return (
           <div className="font-medium">
-            ₹ {cost.toLocaleString()}
+            {cost ? `₹ ${cost.toLocaleString()}` : 'Not specified'}
           </div>
         )
       },
@@ -157,7 +171,7 @@ export function HistoryTable({ requests }: HistoryTableProps) {
       header: "Engineer",
       cell: ({ row }: any) => (
         <div className="font-medium">
-          {row.original.serviceVisit.engineer?.name || 'Not assigned'}
+          {row.original.serviceVisit?.engineer?.name || 'Not assigned'}
         </div>
       ),
     },
@@ -166,7 +180,7 @@ export function HistoryTable({ requests }: HistoryTableProps) {
       header: "Visit Date",
       cell: ({ row }: any) => (
         <div className="font-medium">
-          {format(new Date(row.original.serviceVisit.serviceVisitDate), "MMMM do, yyyy")}
+          {row.original.serviceVisit ? format(new Date(row.original.serviceVisit.serviceVisitDate), "MMMM do, yyyy") : 'Not scheduled'}
         </div>
       ),
     },

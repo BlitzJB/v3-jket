@@ -16,6 +16,7 @@ import {
   DollarSign,
 } from "lucide-react"
 import { format, subDays } from "date-fns"
+import { ServiceRequestStatus } from "@prisma/client"
 
 interface DashboardData {
   totalRequests: number
@@ -24,7 +25,7 @@ interface DashboardData {
   unscheduledRequests: number
   recentRequests: Array<{
     id: string
-    complaint: string
+    complaint: string | null
     createdAt: Date
     machine: {
       serialNumber: string
@@ -39,18 +40,18 @@ interface DashboardData {
     }
     serviceVisit: {
       id: string
-      status: string
+      status: ServiceRequestStatus
       serviceVisitDate: Date
     } | null
   }>
   upcomingVisits: Array<{
     id: string
     serviceVisitDate: Date
-    status: string
+    status: ServiceRequestStatus
     typeOfIssue: string | null
     totalCost: number | null
     serviceRequest: {
-      complaint: string
+      complaint: string | null
       machine: {
         serialNumber: string
         machineModel: {
@@ -65,7 +66,7 @@ interface DashboardData {
     }
   }>
   issueTypes: Array<{
-    type: string | null
+    typeOfIssue: string | null
     _count: number
   }>
   costAnalysis: {
@@ -97,7 +98,7 @@ async function getDashboardData(): Promise<DashboardData> {
       prisma.serviceRequest.count({
         where: {
           serviceVisit: {
-            status: 'PENDING',
+            status: ServiceRequestStatus.PENDING,
           },
         },
       }),
@@ -106,7 +107,7 @@ async function getDashboardData(): Promise<DashboardData> {
       prisma.serviceVisit.count({
         where: {
           status: {
-            in: ['PENDING', 'IN_PROGRESS'],
+            in: [ServiceRequestStatus.PENDING, ServiceRequestStatus.IN_PROGRESS],
           },
         },
       }),
@@ -153,7 +154,7 @@ async function getDashboardData(): Promise<DashboardData> {
             gt: now,
           },
           status: {
-            in: ['PENDING', 'IN_PROGRESS'],
+            in: [ServiceRequestStatus.PENDING, ServiceRequestStatus.IN_PROGRESS],
           },
         },
         include: {
@@ -188,7 +189,7 @@ async function getDashboardData(): Promise<DashboardData> {
       // Cost analysis
       prisma.serviceVisit.aggregate({
         where: {
-          status: 'COMPLETED',
+          status: ServiceRequestStatus.COMPLETED,
           totalCost: {
             not: null,
           },
@@ -212,7 +213,10 @@ async function getDashboardData(): Promise<DashboardData> {
       unscheduledRequests,
       recentRequests,
       upcomingVisits,
-      issueTypes,
+      issueTypes: issueTypes.map(({ typeOfIssue, _count }) => ({
+        typeOfIssue,
+        _count
+      })),
       costAnalysis: {
         totalCost: costAnalysis._sum.totalCost || 0,
         averageCost: costAnalysis._avg.totalCost || 0,
@@ -343,8 +347,8 @@ export default async function SupportDashboard() {
             </div>
             <div className="space-y-4">
               {data.issueTypes.map((issue) => (
-                <div key={issue.type} className="flex items-center justify-between">
-                  <div className="font-medium">{issue.type}</div>
+                <div key={issue.typeOfIssue} className="flex items-center justify-between">
+                  <div className="font-medium">{issue.typeOfIssue}</div>
                   <div className="text-sm text-muted-foreground">
                     {issue._count} visits
                   </div>

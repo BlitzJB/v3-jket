@@ -18,6 +18,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { PickerDialog } from "../../supplies/picker-dialog"
 
+interface Distributor {
+  id: string
+  name: string
+  organizationName: string
+  region: string
+}
+
 interface Machine {
   id: string
   serialNumber: string
@@ -27,7 +34,7 @@ interface Machine {
       name: string
     }
   }
-  supply: {
+  supply?: {
     id: string
     supplyDate: string
     distributor: {
@@ -37,6 +44,10 @@ interface Machine {
       region: string
     }
   }
+}
+
+function isMachine(item: Machine | Distributor): item is Machine {
+  return 'serialNumber' in item && 'machineModel' in item
 }
 
 export default function CreateReturnPage() {
@@ -50,6 +61,11 @@ export default function CreateReturnPage() {
     e.preventDefault()
     if (!selectedMachine) {
       toast.error("Please select a machine")
+      return
+    }
+
+    if (!selectedMachine.supply) {
+      toast.error("Selected machine has no supply information")
       return
     }
 
@@ -102,7 +118,11 @@ export default function CreateReturnPage() {
               <PickerDialog
                 type="supplied-machine"
                 buttonText={selectedMachine ? `${selectedMachine.serialNumber} - ${selectedMachine.machineModel.name}` : "Select Machine"}
-                onSelect={setSelectedMachine}
+                onSelect={(item) => {
+                  if (isMachine(item)) {
+                    setSelectedMachine(item)
+                  }
+                }}
                 selectedId={selectedMachine?.id}
               />
             </div>
@@ -141,19 +161,19 @@ export default function CreateReturnPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <div className="text-sm text-muted-foreground">Organization</div>
-                          <div className="font-medium">{selectedMachine.supply.distributor.organizationName}</div>
+                          <div className="font-medium">{selectedMachine.supply?.distributor.organizationName}</div>
                         </div>
                         <div>
                           <div className="text-sm text-muted-foreground">Contact Person</div>
-                          <div className="font-medium">{selectedMachine.supply.distributor.name}</div>
+                          <div className="font-medium">{selectedMachine.supply?.distributor.name}</div>
                         </div>
                         <div>
                           <div className="text-sm text-muted-foreground">Supply Date</div>
-                          <div className="font-medium">{format(new Date(selectedMachine.supply.supplyDate), "PPP")}</div>
+                          <div className="font-medium">{selectedMachine.supply?.supplyDate && format(new Date(selectedMachine.supply.supplyDate), "PPP")}</div>
                         </div>
                         <div>
                           <div className="text-sm text-muted-foreground">Region</div>
-                          <div className="font-medium">{selectedMachine.supply.distributor.region}</div>
+                          <div className="font-medium">{selectedMachine.supply?.distributor.region}</div>
                         </div>
                       </div>
                     </div>

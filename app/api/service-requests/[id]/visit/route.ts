@@ -4,14 +4,15 @@ import { withPermission } from "@/lib/rbac/server"
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withPermission('support:write', async () => {
+    const { id } = await params
     const { engineerId, serviceVisitDate, typeOfIssue, customerSupportNotes } = await req.json()
 
     // Validate request exists
     const request = await prisma.serviceRequest.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         serviceVisit: true,
       },
@@ -29,7 +30,7 @@ export async function POST(
     const visit = await prisma.serviceVisit.create({
       data: {
         serviceRequest: {
-          connect: { id: params.id },
+          connect: { id },
         },
         engineer: {
           connect: { id: engineerId },

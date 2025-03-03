@@ -4,15 +4,16 @@ import { withPermission } from "@/lib/rbac/server"
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withPermission('service:write', async () => {
+    const { id } = await params
     const { comment, attachments } = await request.json()
 
     const visitComment = await prisma.serviceVisitComment.create({
       data: {
         comment: comment,
-        serviceVisitId: params.id,
+        serviceVisitId: id,
         attachments: {
           create: attachments.map((attachment: { name: string; objectName: string }) => ({
             name: attachment.name,

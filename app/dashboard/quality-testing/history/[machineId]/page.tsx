@@ -104,9 +104,10 @@ async function getMachineData(machineId: string): Promise<Machine | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: { machineId: string }
+  params: Promise<{ machineId: string }>
 }): Promise<Metadata> {
-  const machine = await getMachineData(params.machineId)
+  const { machineId } = await params
+  const machine = await getMachineData(machineId)
 
   if (!machine) {
     return {
@@ -124,9 +125,10 @@ export async function generateMetadata({
 export default async function MachineTestDetailPage({
   params,
 }: {
-  params: { machineId: string }
+  params: Promise<{ machineId: string }>
 }) {
-  const machine = await getMachineData(params.machineId)
+  const { machineId } = await params
+  const machine = await getMachineData(machineId)
 
   if (!machine) {
     notFound()

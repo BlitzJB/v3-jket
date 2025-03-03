@@ -4,12 +4,13 @@ import { withPermission } from "@/lib/rbac/server"
 
 export async function GET(
   request: Request,
-  { params }: { params: { returnId: string } }
+  { params }: { params: Promise<{ returnId: string }> }
 ) {
   return withPermission("dispatch:read", async () => {
     try {
+      const { returnId } = await params
       const returnData = await prisma.return.findUnique({
-        where: { id: params.returnId },
+        where: { id: returnId },
         include: {
           machine: {
             include: {
@@ -42,16 +43,17 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { returnId: string } }
+  { params }: { params: Promise<{ returnId: string }> }
 ) {
   return withPermission("dispatch:write", async () => {
     try {
+      const { returnId } = await params
       const body = await request.json()
       const { returnDate, returnReason } = body
 
       // Check if return exists
       const existingReturn = await prisma.return.findUnique({
-        where: { id: params.returnId },
+        where: { id: returnId },
       })
 
       if (!existingReturn) {
@@ -60,7 +62,7 @@ export async function PATCH(
 
       // Update return
       const updatedReturn = await prisma.return.update({
-        where: { id: params.returnId },
+        where: { id: returnId },
         data: {
           returnDate: new Date(returnDate),
           returnReason,

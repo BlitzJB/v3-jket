@@ -163,31 +163,25 @@ async function getDashboardData(): Promise<ServiceVisitStats> {
       }),
       
       // Visits by region
-      prisma.serviceVisit.groupBy({
-        by: "engineerId",
-        where: {
-          serviceRequest: {
-            machine: {
-              warrantyCertificate: {
-                isNot: null,
-              },
-            },
-          },
-        },
-        _count: true,
-      }),
+      prisma.$queryRaw`
+        SELECT wc.state, COUNT(*) as _count
+        FROM ServiceVisit sv
+        JOIN ServiceRequest sr ON sv.serviceRequestId = sr.id
+        JOIN Machine m ON sr.machineId = m.id
+        JOIN WarrantyCertificate wc ON m.warrantyCertificateId = wc.id
+        WHERE wc.state IS NOT NULL
+        GROUP BY wc.state
+        ORDER BY _count DESC
+      `.then(results => results as Array<{ state: string, _count: number }>),
       
       // Common complaints
-      prisma.serviceRequest.groupBy({
-        by: ['complaint'],
-        _count: true,
-        orderBy: {
-          _count: {
-            complaint: 'desc',
-          },
-        },
-        take: 5,
-      }),
+      prisma.$queryRaw`
+        SELECT COALESCE(complaint, 'No complaint specified') as complaint, COUNT(*) as _count
+        FROM ServiceRequest
+        GROUP BY complaint
+        ORDER BY _count DESC
+        LIMIT 5
+      `.then(results => results as Array<{ complaint: string, _count: number }>),
     ])
 
     return {
@@ -195,8 +189,37 @@ async function getDashboardData(): Promise<ServiceVisitStats> {
       pendingVisits,
       completedVisits,
       cancelledVisits,
-      recentVisits,
-      upcomingVisits,
+      recentVisits: recentVisits.map(visit => ({
+        id: visit.id,
+        serviceVisitDate: visit.serviceVisitDate,
+        status: visit.status,
+        serviceVisitNotes: visit.serviceVisitNotes,
+        serviceRequest: {
+          complaint: visit.serviceRequest.complaint || 'No complaint specified',
+          machine: {
+            serialNumber: visit.serviceRequest.machine.serialNumber,
+            machineModel: {
+              name: visit.serviceRequest.machine.machineModel.name
+            },
+            warrantyCertificate: visit.serviceRequest.machine.warrantyCertificate
+          }
+        }
+      })),
+      upcomingVisits: upcomingVisits.map(visit => ({
+        id: visit.id,
+        serviceVisitDate: visit.serviceVisitDate,
+        status: visit.status,
+        serviceRequest: {
+          complaint: visit.serviceRequest.complaint || 'No complaint specified',
+          machine: {
+            serialNumber: visit.serviceRequest.machine.serialNumber,
+            machineModel: {
+              name: visit.serviceRequest.machine.machineModel.name
+            },
+            warrantyCertificate: visit.serviceRequest.machine.warrantyCertificate
+          }
+        }
+      })),
       visitsByRegion,
       commonComplaints,
     }

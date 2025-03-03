@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { withPermission } from "@/lib/rbac/server"
+import { Prisma } from "@prisma/client"
 
 interface TestResult {
   range?: string
@@ -33,12 +34,22 @@ export async function POST(req: Request) {
         return new NextResponse("Serial number already exists", { status: 400 })
       }
 
+      // Convert testResults to a plain object that matches Prisma's JSON type
+      const testResultData: Prisma.JsonObject = {}
+      for (const [key, value] of Object.entries(testResults)) {
+        testResultData[key] = {
+          range: value.range,
+          condition: value.condition,
+          passed: value.passed
+        }
+      }
+
       const machine = await prisma.machine.create({
         data: {
           serialNumber,
           machineModelId,
           manufacturingDate: new Date(manufacturingDate),
-          testResultData: testResults,
+          testResultData,
           testAdditionalNotes: additionalNotes,
         },
       })

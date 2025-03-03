@@ -58,7 +58,8 @@ async function getMachinesData() {
           id: supply.id,
           sellBy: supply.sellBy,
           distributor: {
-            name: supply.distributor.organizationName || 'Unknown'
+            name: supply.distributor.organizationName || 'Unknown',
+            organizationName: supply.distributor.organizationName || 'Unknown'
           }
         }
       }))

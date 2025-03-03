@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 
 export async function GET(
   req: Request,
-  { params }: { params: { machineId: string } }
+  { params }: { params: Promise<{ machineId: string }> }
 ) {
   return withPermission("distributor:inventory:read", async () => {
     const session = await auth()
@@ -12,9 +12,10 @@ export async function GET(
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { machineId } = await params
     const machine = await prisma.machine.findFirst({
       where: {
-        id: params.machineId,
+        id: machineId,
         supply: {
           distributorId: session.user.id,
         },

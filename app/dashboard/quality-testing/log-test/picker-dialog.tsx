@@ -67,7 +67,7 @@ export function PickerDialog({
     },
     {
       id: 'actions',
-      cell: ({ row }: { row: { original: Category } }) => (
+      cell: ({ row }: { row: { original: Category | MachineModel } }) => (
         <Button
           variant="outline"
           size="sm"
@@ -90,7 +90,7 @@ export function PickerDialog({
     },
     {
       id: 'actions',
-      cell: ({ row }: { row: { original: MachineModel } }) => (
+      cell: ({ row }: { row: { original: Category | MachineModel } }) => (
         <Button
           variant="outline"
           size="sm"

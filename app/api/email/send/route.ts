@@ -13,7 +13,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const html = render(template)
+    const html = await render(template)
 
     const info = await transporter.sendMail({
       from: emailConfig.from,

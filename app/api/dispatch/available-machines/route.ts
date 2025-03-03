@@ -8,8 +8,8 @@ export async function GET() {
       // Get machines that haven't been supplied yet
       const machines = await prisma.machine.findMany({
         where: {
-          Supply: null, // No supply record
-          Return: null, // No return record
+          supply: null, // No supply record
+          return: null, // No return record
         },
         select: {
           id: true,

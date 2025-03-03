@@ -206,11 +206,19 @@ export function PickerDialog({
               className="pl-9"
             />
           </div>
-          <DataTable
-            columns={type === 'machine' ? machineColumns : distributorColumns}
-            data={filteredData}
-            pagination
-          />
+          {type === 'machine' ? (
+            <DataTable<Machine>
+              columns={machineColumns}
+              data={filteredData as Machine[]}
+              pagination
+            />
+          ) : (
+            <DataTable<Distributor>
+              columns={distributorColumns}
+              data={filteredData as Distributor[]}
+              pagination
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>

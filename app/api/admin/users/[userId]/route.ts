@@ -16,12 +16,13 @@ const updateUserSchema = z.object({
 
 export async function GET(
   _request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     return withPermission('users:read', async () => {
+      const { userId } = await params
       const user = await prisma.user.findUnique({
-        where: { id: params.userId },
+        where: { id: userId },
         select: {
           id: true,
           email: true,
@@ -54,20 +55,21 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const json = await request.json()
     const body = updateUserSchema.parse(json)
 
     return withPermission('users:write', async () => {
+      const { userId } = await params
       // Check if email is taken by another user
       if (body.email) {
         const exists = await prisma.user.findFirst({
           where: {
             email: body.email,
             NOT: {
-              id: params.userId,
+              id: userId,
             },
           },
         })
@@ -89,7 +91,7 @@ export async function PATCH(
       }
 
       const user = await prisma.user.update({
-        where: { id: params.userId },
+        where: { id: userId },
         data: updateData,
         select: {
           id: true,
@@ -123,12 +125,13 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     return withPermission('users:delete', async () => {
+      const { userId } = await params
       await prisma.user.delete({
-        where: { id: params.userId },
+        where: { id: userId },
       })
 
       return NextResponse.json({ success: true })

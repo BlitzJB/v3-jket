@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 
 export async function POST(
   req: Request,
-  { params }: { params: { machineId: string } }
+  { params }: { params: Promise<{ machineId: string }> }
 ) {
   return withPermission("distributor:sales:write", async () => {
     const session = await auth()
@@ -12,12 +12,13 @@ export async function POST(
       return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { machineId } = await params
     const { customerName, customerPhoneNumber, customerAddress, saleDate } = await req.json()
 
     // Verify the machine belongs to this distributor and is available
     const machine = await prisma.machine.findFirst({
       where: {
-        id: params.machineId,
+        id: machineId,
         supply: {
           distributorId: session.user.id,
         },
@@ -38,7 +39,7 @@ export async function POST(
       data: {
         machine: {
           connect: {
-            id: params.machineId,
+            id: machineId,
           },
         },
         saleDate: new Date(saleDate),

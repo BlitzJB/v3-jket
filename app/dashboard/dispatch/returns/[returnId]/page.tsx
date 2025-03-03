@@ -50,9 +50,10 @@ async function getReturnData(returnId: string) {
 export default async function ReturnDetailsPage({
   params,
 }: {
-  params: { returnId: string }
+  params: Promise<{ returnId: string }>
 }) {
-  const returnData = await getReturnData(params.returnId)
+  const { returnId } = await params
+  const returnData = await getReturnData(returnId)
 
   return (
     <div className="p-8">
@@ -125,7 +126,7 @@ export default async function ReturnDetailsPage({
                     Organization
                   </div>
                   <div className="font-medium">
-                    {returnData.machine.supply.distributor.organizationName}
+                    {returnData.machine.supply?.distributor?.organizationName ?? "N/A"}
                   </div>
                 </div>
                 <div>
@@ -133,7 +134,7 @@ export default async function ReturnDetailsPage({
                     Contact Person
                   </div>
                   <div className="font-medium">
-                    {returnData.machine.supply.distributor.name}
+                    {returnData.machine.supply?.distributor?.name ?? "N/A"}
                   </div>
                 </div>
                 <div>
@@ -141,7 +142,7 @@ export default async function ReturnDetailsPage({
                     Region
                   </div>
                   <div className="font-medium">
-                    {returnData.machine.supply.distributor.region}
+                    {returnData.machine.supply?.distributor?.region ?? "N/A"}
                   </div>
                 </div>
               </div>
@@ -170,7 +171,9 @@ export default async function ReturnDetailsPage({
                     Supply Date
                   </div>
                   <div className="font-medium">
-                    {format(new Date(returnData.machine.supply.supplyDate), "PPP")}
+                    {returnData.machine.supply?.supplyDate 
+                      ? format(new Date(returnData.machine.supply.supplyDate), "PPP")
+                      : "N/A"}
                   </div>
                 </div>
                 <div>

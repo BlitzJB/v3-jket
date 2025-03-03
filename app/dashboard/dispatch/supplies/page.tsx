@@ -7,7 +7,12 @@ import Link from "next/link"
 
 async function getSuppliesData() {
   return withPermission("dispatch:read", async () => {
-    return prisma.supply.findMany({
+    const supplies = await prisma.supply.findMany({
+      where: {
+        machine: {
+          isNot: null
+        }
+      },
       include: {
         machine: {
           include: {
@@ -25,6 +30,40 @@ async function getSuppliesData() {
         supplyDate: 'desc',
       },
     })
+
+    // Filter out supplies where machine is null and map to our interface
+    return supplies
+      .filter((supply) => supply.machine !== null)
+      .map((supply) => ({
+        id: supply.id,
+        supplyDate: supply.supplyDate,
+        sellBy: supply.sellBy,
+        machine: {
+          id: supply.machine!.id,
+          serialNumber: supply.machine!.serialNumber,
+          machineModel: {
+            id: supply.machine!.machineModel.id,
+            name: supply.machine!.machineModel.name,
+            shortCode: supply.machine!.machineModel.shortCode,
+            category: {
+              id: supply.machine!.machineModel.category.id,
+              name: supply.machine!.machineModel.category.name,
+              shortCode: supply.machine!.machineModel.category.shortCode,
+            },
+          },
+          return: supply.machine!.return ? {
+            id: supply.machine!.return.id,
+            returnDate: supply.machine!.return.returnDate,
+            returnReason: supply.machine!.return.returnReason,
+          } : null,
+        },
+        distributor: {
+          id: supply.distributor.id,
+          name: supply.distributor.name || '',
+          organizationName: supply.distributor.organizationName || '',
+          region: supply.distributor.region || '',
+        },
+      }))
   })
 }
 

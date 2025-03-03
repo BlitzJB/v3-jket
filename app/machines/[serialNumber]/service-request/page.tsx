@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -19,8 +19,9 @@ type Attachment = {
 export default function ServiceRequestPage({ 
   params 
 }: { 
-  params: { serialNumber: string } 
+  params: Promise<{ serialNumber: string }> 
 }) {
+  const { serialNumber } = use(params)
   const router = useRouter()
   const [complaint, setComplaint] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -68,7 +69,7 @@ export default function ServiceRequestPage({
     setIsSubmitting(true)
     try {
       // First get the machine ID using the serial number
-      const machineResponse = await fetch(`/api/machines/${params.serialNumber}`)
+      const machineResponse = await fetch(`/api/machines/${serialNumber}`)
       if (!machineResponse.ok) {
         throw new Error('Machine not found')
       }
@@ -95,7 +96,7 @@ export default function ServiceRequestPage({
       }
 
       toast.success('Service request submitted successfully')
-      router.push(`/machines/${params.serialNumber}`)
+      router.push(`/machines/${serialNumber}`)
     } catch (error) {
       console.error('Error submitting service request:', error)
       toast.error('Failed to submit service request')
@@ -111,7 +112,7 @@ export default function ServiceRequestPage({
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        <Link href={`/machines/${params.serialNumber}`}>
+        <Link href={`/machines/${serialNumber}`}>
           <Button variant="ghost" className="mb-6">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Machine Details
@@ -192,7 +193,7 @@ export default function ServiceRequestPage({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push(`/machines/${params.serialNumber}`)}
+                onClick={() => router.push(`/machines/${serialNumber}`)}
                 disabled={isSubmitting || isUploading}
               >
                 Cancel

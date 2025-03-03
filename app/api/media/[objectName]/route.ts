@@ -6,10 +6,10 @@ const BUCKET_NAME = 'service-attachments'
 
 export async function GET(
   request: Request,
-  { params }: { params: { objectName: string } }
+  { params }: { params: Promise<{ objectName: string }> }
 ) {
   try {
-    const objectName = params.objectName
+    const { objectName } = await params
     const dataStream = await minioClient.getObject(BUCKET_NAME, objectName)
     
     // Get object stats to get content type

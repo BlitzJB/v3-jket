@@ -2,6 +2,25 @@ import { withPermission } from "@/lib/rbac/server"
 import { prisma } from "@/lib/prisma"
 import { QualityTestingHistoryTable } from "./quality-testing-history-table"
 
+interface Machine {
+  id: string
+  serialNumber: string
+  manufacturingDate: Date
+  testResultData: Record<string, any>
+  testAdditionalNotes: string | null
+  machineModel: {
+    id: string
+    name: string
+    shortCode: string
+    coverImageUrl: string | null
+    category: {
+      id: string
+      name: string
+      shortCode: string
+    }
+  }
+}
+
 async function getCategories() {
   return withPermission("quality:read", async () => {
     return prisma.category.findMany({
@@ -31,7 +50,7 @@ async function getCategories() {
 
 async function getMachinesData() {
   return withPermission("quality:read", async () => {
-    return prisma.machine.findMany({
+    const machines = await prisma.machine.findMany({
       select: {
         id: true,
         serialNumber: true,
@@ -58,6 +77,26 @@ async function getMachinesData() {
         manufacturingDate: "desc",
       },
     })
+
+    // Map database results to our interface
+    return machines.map((machine): Machine => ({
+      id: machine.id,
+      serialNumber: machine.serialNumber,
+      manufacturingDate: machine.manufacturingDate,
+      testResultData: machine.testResultData as Record<string, any> || {},
+      testAdditionalNotes: machine.testAdditionalNotes,
+      machineModel: {
+        id: machine.machineModel.id,
+        name: machine.machineModel.name,
+        shortCode: machine.machineModel.shortCode,
+        coverImageUrl: machine.machineModel.coverImageUrl,
+        category: {
+          id: machine.machineModel.category.id,
+          name: machine.machineModel.category.name,
+          shortCode: machine.machineModel.category.shortCode,
+        },
+      },
+    }))
   })
 }
 

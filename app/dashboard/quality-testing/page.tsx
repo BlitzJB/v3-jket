@@ -67,16 +67,16 @@ async function getDashboardData() {
 
     // Calculate pass rates and test statistics
     const machineStats = machines.map(machine => {
-      const testResults = machine.testResultData as Record<string, TestResult>
-      const totalTests = Object.keys(testResults).length
-      const passedTests = Object.values(testResults).filter(result => result.passed).length
+      const testResults = (machine.testResultData as unknown) as Record<string, TestResult>
+      const totalTests = Object.keys(testResults || {}).length
+      const passedTests = Object.values(testResults || {}).filter(result => result.passed).length
 
       return {
         totalTests,
         passedTests,
         isPassed: totalTests > 0 && passedTests === totalTests,
         category: machine.machineModel.category.name,
-        tests: testResults,
+        tests: testResults || {},
       }
     })
 
@@ -251,7 +251,7 @@ export default async function QualityTestingDashboard() {
               <div key={category} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="font-medium">{category}</p>
-                  <Badge variant={stats.passed / stats.total >= 0.9 ? "success" : "warning"}>
+                  <Badge variant={stats.passed / stats.total >= 0.9 ? "success" : "secondary"}>
                     {((stats.passed / stats.total) * 100).toFixed(1)}% Pass Rate
                   </Badge>
                 </div>
@@ -299,7 +299,7 @@ export default async function QualityTestingDashboard() {
                     <td className="py-2">{machine.machineModel.name}</td>
                     <td className="py-2">{format(new Date(machine.manufacturingDate), "PP")}</td>
                     <td className="py-2">
-                      <Badge variant={isPassed ? "success" : "warning"}>
+                      <Badge variant={isPassed ? "success" : "secondary"}>
                         {isPassed ? "Passed" : "Issues Found"}
                       </Badge>
                     </td>
