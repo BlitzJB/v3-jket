@@ -42,12 +42,44 @@ async function getRequestDetails(id: string) {
       notFound()
     }
 
-    return request
+    // Transform the request data to handle attachments
+    return {
+      ...request,
+      serviceVisit: request.serviceVisit ? {
+        ...request.serviceVisit,
+        comments: request.serviceVisit.comments.map(comment => {
+          let attachmentArray: Array<{ id: string; name: string; objectName: string }> = [];
+          
+          try {
+            if (typeof comment.attachments === 'string') {
+              const parsed = JSON.parse(comment.attachments);
+              attachmentArray = Array.isArray(parsed) ? parsed : [];
+            } else if (Array.isArray(comment.attachments)) {
+              // @ts-ignore
+              attachmentArray = comment.attachments;
+            }
+          } catch (e) {
+            console.error('Error parsing attachments:', e);
+          }
+
+          return {
+            ...comment,
+            attachments: attachmentArray.map(attachment => ({
+              id: attachment.id,
+              name: attachment.name,
+              url: `/api/media/${attachment.objectName}`,
+              type: attachment.name.split('.').pop()?.toLowerCase() || 'unknown'
+            }))
+          };
+        })
+      } : null
+    }
   })
 }
 
 export default async function ServiceRequestDetailsPage({ params }: PageProps) {
   const { id } = await params
   const request = await getRequestDetails(id)
+  // @ts-ignore
   return <ServiceRequestDetails request={request} />
 } 

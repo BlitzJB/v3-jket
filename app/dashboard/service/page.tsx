@@ -163,25 +163,64 @@ async function getDashboardData(): Promise<ServiceVisitStats> {
       }),
       
       // Visits by region
-      prisma.$queryRaw`
-        SELECT wc.state, COUNT(*) as _count
-        FROM ServiceVisit sv
-        JOIN ServiceRequest sr ON sv.serviceRequestId = sr.id
-        JOIN Machine m ON sr.machineId = m.id
-        JOIN WarrantyCertificate wc ON m.warrantyCertificateId = wc.id
-        WHERE wc.state IS NOT NULL
-        GROUP BY wc.state
-        ORDER BY _count DESC
-      `.then(results => results as Array<{ state: string, _count: number }>),
+      prisma.warrantyCertificate.findMany({
+        where: {
+          state: { not: undefined },
+          machine: {
+            serviceRequests: {
+              some: {
+                serviceVisit: { isNot: null }
+              }
+            }
+          }
+        },
+        include: {
+          machine: {
+            include: {
+              serviceRequests: {
+                include: {
+                  serviceVisit: true
+                }
+              }
+            }
+          }
+        }
+      }).then(results => {
+        const stateCounts = results.reduce((acc, curr) => {
+          if (!curr.state) return acc;
+          const state = curr.state;
+          const count = curr.machine.serviceRequests.filter(sr => sr.serviceVisit !== null).length;
+          if (!acc[state]) acc[state] = 0;
+          acc[state] += count;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        return Object.entries(stateCounts)
+          .map(([state, count]) => ({ state, _count: count }))
+          .sort((a, b) => b._count - a._count);
+      }),
       
       // Common complaints
-      prisma.$queryRaw`
-        SELECT COALESCE(complaint, 'No complaint specified') as complaint, COUNT(*) as _count
-        FROM ServiceRequest
-        GROUP BY complaint
-        ORDER BY _count DESC
-        LIMIT 5
-      `.then(results => results as Array<{ complaint: string, _count: number }>),
+      prisma.serviceRequest.findMany({
+        select: {
+          complaint: true
+        },
+        where: {
+          complaint: { not: undefined }
+        }
+      }).then(results => {
+        const complaintCounts = results.reduce((acc, curr) => {
+          const complaint = curr.complaint || 'No complaint specified';
+          if (!acc[complaint]) acc[complaint] = 0;
+          acc[complaint]++;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        return Object.entries(complaintCounts)
+          .map(([complaint, count]) => ({ complaint, _count: count }))
+          .sort((a, b) => b._count - a._count)
+          .slice(0, 5);
+      }),
     ])
 
     return {

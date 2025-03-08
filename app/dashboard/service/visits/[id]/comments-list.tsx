@@ -2,7 +2,8 @@
 
 import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
-import { Paperclip } from "lucide-react"
+import { FileIcon, ImageIcon, Paperclip, FileTextIcon, VideoIcon } from "lucide-react"
+import Image from "next/image"
 
 interface Comment {
   id: string
@@ -12,11 +13,34 @@ interface Comment {
     id: string
     name: string
     url: string
+    type: string
   }>
 }
 
 interface CommentsListProps {
   comments: Comment[]
+}
+
+function getFileIcon(type: string) {
+  switch (type) {
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+      return <ImageIcon className="h-4 w-4" />
+    case 'pdf':
+      return <FileTextIcon className="h-4 w-4" />
+    case 'mp4':
+    case 'mov':
+    case 'avi':
+      return <VideoIcon className="h-4 w-4" />
+    default:
+      return <FileIcon className="h-4 w-4" />
+  }
+}
+
+function isImageType(type: string) {
+  return ['jpg', 'jpeg', 'png', 'gif'].includes(type)
 }
 
 export function CommentsList({ comments }: CommentsListProps) {
@@ -40,17 +64,30 @@ export function CommentsList({ comments }: CommentsListProps) {
               {comment.comment}
             </div>
             {comment.attachments.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
                 {comment.attachments.map((attachment) => (
                   <a
                     key={attachment.id}
                     href={attachment.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    className="group relative block"
                   >
-                    <Paperclip className="h-3 w-3" />
-                    {attachment.name}
+                    {isImageType(attachment.type) ? (
+                      <div className="relative aspect-square overflow-hidden rounded-lg border">
+                        <Image
+                          src={attachment.url}
+                          alt={attachment.name}
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted transition-colors">
+                        {getFileIcon(attachment.type)}
+                        <span className="text-sm truncate">{attachment.name}</span>
+                      </div>
+                    )}
                   </a>
                 ))}
               </div>

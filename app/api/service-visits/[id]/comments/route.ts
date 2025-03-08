@@ -10,16 +10,18 @@ export async function POST(
     const { id } = await params
     const { comment, attachments } = await request.json()
 
+    // Ensure attachments is an array
+    const attachmentArray = Array.isArray(attachments) ? attachments : [];
+
     const visitComment = await prisma.serviceVisitComment.create({
       data: {
         comment: comment,
         serviceVisitId: id,
-        attachments: {
-          create: attachments.map((attachment: { name: string; objectName: string }) => ({
-            name: attachment.name,
-            objectName: attachment.objectName,
-          })),
-        },
+        attachments: JSON.stringify(attachmentArray.map((attachment: { name: string; objectName: string }) => ({
+          id: attachment.objectName,
+          name: attachment.name,
+          objectName: attachment.objectName,
+        })))
       },
     })
 
