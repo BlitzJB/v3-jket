@@ -14,7 +14,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Camera, Loader2, X } from 'lucide-react'
+import { Camera, Loader2, X, FileText } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,8 @@ interface FormData {
   description: string
   warrantyPeriodMonths: number
   coverImageUrl: string
+  catalogueFileUrl: string
+  userManualFileUrl: string
   categoryId: string
 }
 
@@ -54,12 +56,16 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isUploadingCatalogue, setIsUploadingCatalogue] = useState(false)
+  const [isUploadingManual, setIsUploadingManual] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     shortCode: '',
     description: '',
     warrantyPeriodMonths: 12,
     coverImageUrl: '',
+    catalogueFileUrl: '',
+    userManualFileUrl: '',
     categoryId: '',
   })
 
@@ -73,6 +79,8 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
           description: model.description || '',
           warrantyPeriodMonths: model.warrantyPeriodMonths,
           coverImageUrl: model.coverImageUrl || '',
+          catalogueFileUrl: model.catalogueFileUrl || '',
+          userManualFileUrl: model.userManualFileUrl || '',
           categoryId: model.categoryId,
         })
       })
@@ -178,6 +186,72 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
     setFormData(prev => ({ ...prev, coverImageUrl: '' }))
   }
 
+  const handleCatalogueUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingCatalogue(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/media', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+      setFormData(prev => ({ ...prev, catalogueFileUrl: data.url }))
+      toast.success('Catalogue uploaded successfully')
+    } catch (error) {
+      console.error('Error uploading catalogue:', error)
+      toast.error('Failed to upload catalogue')
+    } finally {
+      setIsUploadingCatalogue(false)
+    }
+  }
+
+  const handleManualUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploadingManual(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/media', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const data = await response.json()
+      setFormData(prev => ({ ...prev, userManualFileUrl: data.url }))
+      toast.success('User manual uploaded successfully')
+    } catch (error) {
+      console.error('Error uploading user manual:', error)
+      toast.error('Failed to upload user manual')
+    } finally {
+      setIsUploadingManual(false)
+    }
+  }
+
+  const removeCatalogue = () => {
+    setFormData(prev => ({ ...prev, catalogueFileUrl: '' }))
+  }
+
+  const removeManual = () => {
+    setFormData(prev => ({ ...prev, userManualFileUrl: '' }))
+  }
+
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <div className="mb-8">
@@ -221,18 +295,18 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
                 htmlFor="shortCode"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Short Code
+                Item Code
               </label>
               <Input
                 id="shortCode"
                 name="shortCode"
-                placeholder="Enter short code"
+                placeholder="Enter item code"
                 required
                 value={formData.shortCode}
                 onChange={handleChange}
                 className="font-mono"
                 pattern="^[A-Z0-9]+$"
-                title="Short code must be uppercase letters and numbers only"
+                title="Item code must be uppercase letters and numbers only"
               />
               <p className="text-sm text-muted-foreground">
                 A unique identifier using uppercase letters and numbers only (e.g., HV100, AC200)
@@ -307,30 +381,144 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
                       <Camera className="mx-auto h-8 w-8 text-muted-foreground" />
                       <label
                         htmlFor="coverImage"
-                        className="mt-2 cursor-pointer rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                        className="mt-2 block text-sm font-medium text-muted-foreground cursor-pointer"
                       >
-                        {isUploading ? (
-                          <div className="flex items-center">
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Uploading...
-                          </div>
-                        ) : (
-                          'Upload Image'
-                        )}
+                        Upload Image
+                        <input
+                          type="file"
+                          id="coverImage"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={handleImageUpload}
+                          disabled={isUploading}
+                        />
                       </label>
-                      <input
-                        type="file"
-                        id="coverImage"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={handleImageUpload}
-                        disabled={isUploading}
-                      />
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        PNG, JPG or WEBP up to 10MB
-                      </p>
+                      {isUploading && (
+                        <div className="mt-2">
+                          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                        </div>
+                      )}
                     </div>
                   )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">
+                    Upload a cover image for this machine model. Recommended size: 600x400px.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Product Catalogue (PDF)
+              </label>
+              <div className="flex items-start space-x-4">
+                <div className="relative w-40 h-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                  {formData.catalogueFileUrl ? (
+                    <>
+                      <div className="flex items-center justify-center w-full h-full">
+                        <a href={formData.catalogueFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm flex items-center">
+                          <FileText className="h-5 w-5 mr-2" />
+                          View Catalogue
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeCatalogue}
+                        className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <FileText className="mx-auto h-6 w-6 text-muted-foreground" />
+                      <label
+                        htmlFor="catalogueUpload"
+                        className="mt-1 block text-xs font-medium text-muted-foreground cursor-pointer"
+                      >
+                        Upload PDF
+                        <input
+                          id="catalogueUpload"
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          className="sr-only"
+                          onChange={handleCatalogueUpload}
+                          disabled={isUploadingCatalogue}
+                        />
+                      </label>
+                      {isUploadingCatalogue && (
+                        <div className="mt-1">
+                          <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">
+                    Upload a product catalogue PDF containing detailed specifications and features.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                User Manual
+              </label>
+              <div className="flex items-start space-x-4">
+                <div className="relative w-40 h-16 rounded-lg border-2 border-dashed border-muted-foreground/25 flex items-center justify-center">
+                  {formData.userManualFileUrl ? (
+                    <>
+                      <div className="flex items-center justify-center w-full h-full">
+                        <a href={formData.userManualFileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-sm flex items-center">
+                          <FileText className="h-5 w-5 mr-2" />
+                          View Manual
+                        </a>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeManual}
+                        className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <FileText className="mx-auto h-6 w-6 text-muted-foreground" />
+                      <label
+                        htmlFor="manualUpload"
+                        className="mt-1 block text-xs font-medium text-muted-foreground cursor-pointer"
+                      >
+                        Upload PDF
+                        <input
+                          id="manualUpload"
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          className="sr-only"
+                          onChange={handleManualUpload}
+                          disabled={isUploadingManual}
+                        />
+                      </label>
+                      {isUploadingManual && (
+                        <div className="mt-1">
+                          <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">
+                    Upload a user manual PDF with installation, operation, and maintenance instructions.
+                  </p>
                 </div>
               </div>
             </div>

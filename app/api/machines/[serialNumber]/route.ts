@@ -13,9 +13,27 @@ export async function GET(
       },
       include: {
         machineModel: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            shortCode: true,
+            description: true,
+            warrantyPeriodMonths: true,
+            coverImageUrl: true,
+            catalogueFileUrl: true,
+            userManualFileUrl: true,
             category: true,
           },
+        },
+        supply: {
+          include: {
+            distributor: {
+              select: {
+                organizationName: true,
+                region: true
+              }
+            }
+          }
         },
         sale: true,
         warrantyCertificate: true,

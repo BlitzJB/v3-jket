@@ -8,12 +8,12 @@ import {
 // Navigation items for the dispatch dashboard
 const dispatchNavItems = [
   {
-    title: "Overview",
+    title: "Dashboard",
     href: "/dashboard/dispatch",
     icon: <BarChart3 className="h-4 w-4" />,
   },
   {
-    title: "Machine Supplies",
+    title: "Dispatch Department",
     href: "/dashboard/dispatch/supplies",
     icon: <TruckIcon className="h-4 w-4" />,
   },

@@ -26,6 +26,8 @@ interface Machine {
     description: string
     warrantyPeriodMonths: number
     coverImageUrl: string
+    catalogueFileUrl?: string
+    userManualFileUrl?: string
     category: {
       name: string
       shortCode: string
@@ -34,8 +36,11 @@ interface Machine {
   sale?: {
     saleDate: string
     customerName: string
+    customerContactPersonName: string
+    customerEmail: string
     customerPhoneNumber: string
     customerAddress: string
+    distributorInvoiceNumber?: string
   }
   supply?: {
     distributor: {
@@ -193,7 +198,9 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
             warrantyPeriodMonths: machine.machineModel.warrantyPeriodMonths,
             category: {
               name: machine.machineModel.category.name
-            }
+            },
+            catalogueFileUrl: machine.machineModel.catalogueFileUrl,
+            userManualFileUrl: machine.machineModel.userManualFileUrl
           },
           sale: {
             saleDate: machine.sale.saleDate
@@ -310,6 +317,36 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
                     <p className="font-medium">{format(new Date(machine.manufacturingDate), 'PPP')}</p>
                   </div>
                 </div>
+
+                {(machine.machineModel.catalogueFileUrl || machine.machineModel.userManualFileUrl) && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm font-medium">Documentation</p>
+                    <div className="flex flex-wrap gap-2">
+                      {machine.machineModel.catalogueFileUrl && (
+                        <a 
+                          href={machine.machineModel.catalogueFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm text-primary hover:underline"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Product Catalogue
+                        </a>
+                      )}
+                      {machine.machineModel.userManualFileUrl && (
+                        <a 
+                          href={machine.machineModel.userManualFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-sm text-primary hover:underline"
+                        >
+                          <FileText className="h-4 w-4" />
+                          User Manual
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {machine.sale && (
@@ -345,6 +382,50 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
                     </div>
                   </div>
                 </>
+              )}
+
+              {machine.sale && (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary/70" />
+                      Customer Information
+                    </CardTitle>
+                    <CardDescription>
+                      Details of the customer who purchased this machine
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">Organization/Company</h4>
+                          <p className="font-medium">{machine.sale.customerName}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">Contact Person</h4>
+                          <p className="font-medium">{machine.sale.customerContactPersonName}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">Email</h4>
+                          <p className="font-medium">{machine.sale.customerEmail}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">Phone</h4>
+                          <p className="font-medium">{machine.sale.customerPhoneNumber}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Address</h4>
+                        <p className="font-medium">{machine.sale.customerAddress}</p>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground">Sale Date</h4>
+                        <p className="font-medium">{format(new Date(machine.sale.saleDate), "PPP")}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </CardContent>
           </Card>

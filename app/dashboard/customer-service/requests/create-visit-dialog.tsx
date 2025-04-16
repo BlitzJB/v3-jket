@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { Calendar as CalendarIcon, Loader2 } from "lucide-react"
@@ -101,7 +101,7 @@ export function CreateVisitDialog({
   })
 
   // Fetch engineers when dialog opens
-  useState(() => {
+  useEffect(() => {
     if (open) {
       fetch('/api/engineers')
         .then((res) => res.json())
@@ -114,7 +114,7 @@ export function CreateVisitDialog({
           setIsLoadingEngineers(false)
         })
     }
-  })
+  }, [open])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {

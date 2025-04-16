@@ -111,7 +111,7 @@ export default function CreateCategoryPage() {
                 htmlFor="shortCode"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Short Code
+                Category Short Code
               </label>
               <Input
                 id="shortCode"

@@ -13,7 +13,15 @@ export async function POST(
     }
 
     const { machineId } = await params
-    const { customerName, customerPhoneNumber, customerAddress, saleDate } = await req.json()
+    const { 
+      customerName, 
+      customerContactPersonName,
+      customerEmail,
+      customerPhoneNumber, 
+      customerAddress, 
+      distributorInvoiceNumber,
+      saleDate 
+    } = await req.json()
 
     // Verify the machine belongs to this distributor and is available
     const machine = await prisma.machine.findFirst({
@@ -44,8 +52,11 @@ export async function POST(
         },
         saleDate: new Date(saleDate),
         customerName,
+        customerContactPersonName,
+        customerEmail,
         customerPhoneNumber,
         customerAddress,
+        distributorInvoiceNumber,
       },
     })
 

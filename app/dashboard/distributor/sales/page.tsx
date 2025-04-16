@@ -7,8 +7,11 @@ interface Sale {
   id: string
   saleDate: Date
   customerName: string
+  customerContactPersonName: string
+  customerEmail: string
   customerPhoneNumber: string
   customerAddress: string
+  distributorInvoiceNumber?: string
   machine: {
     id: string
     serialNumber: string

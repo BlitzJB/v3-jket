@@ -42,8 +42,11 @@ export default function LogSalePage({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [machine, setMachine] = useState<Machine | null>(null)
   const [customerName, setCustomerName] = useState("")
+  const [customerContactPersonName, setCustomerContactPersonName] = useState("")
+  const [customerEmail, setCustomerEmail] = useState("")
   const [customerPhoneNumber, setCustomerPhoneNumber] = useState("")
   const [customerAddress, setCustomerAddress] = useState("")
+  const [distributorInvoiceNumber, setDistributorInvoiceNumber] = useState("")
 
   // Load machine data
   useState(() => {
@@ -60,7 +63,15 @@ export default function LogSalePage({
 
     // Basic validation
     if (!customerName.trim()) {
-      toast.error("Customer name is required")
+      toast.error("Organization/Company name is required")
+      return
+    }
+    if (!customerContactPersonName.trim()) {
+      toast.error("Contact person name is required")
+      return
+    }
+    if (!customerEmail.trim()) {
+      toast.error("Email is required")
       return
     }
     if (!customerPhoneNumber.trim()) {
@@ -79,8 +90,11 @@ export default function LogSalePage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerName,
+          customerContactPersonName,
+          customerEmail,
           customerPhoneNumber,
           customerAddress,
+          distributorInvoiceNumber: distributorInvoiceNumber || undefined,
           saleDate: new Date(),
         }),
       })
@@ -175,12 +189,35 @@ export default function LogSalePage({
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Customer Name
+                  Organization/Company Name
                 </label>
                 <Input
-                  placeholder="Enter customer name"
+                  placeholder="Enter organization/company name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Contact Person Name
+                </label>
+                <Input
+                  placeholder="Enter contact person name"
+                  value={customerContactPersonName}
+                  onChange={(e) => setCustomerContactPersonName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
                 />
               </div>
 
@@ -203,6 +240,17 @@ export default function LogSalePage({
                   placeholder="Enter customer address"
                   value={customerAddress}
                   onChange={(e) => setCustomerAddress(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Invoice Number (Optional)
+                </label>
+                <Input
+                  placeholder="Enter invoice number (if applicable)"
+                  value={distributorInvoiceNumber}
+                  onChange={(e) => setDistributorInvoiceNumber(e.target.value)}
                 />
               </div>
 

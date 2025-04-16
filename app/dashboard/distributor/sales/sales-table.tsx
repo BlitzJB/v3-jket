@@ -24,8 +24,11 @@ interface Sale {
   id: string
   saleDate: Date
   customerName: string
+  customerContactPersonName: string
+  customerEmail: string
   customerPhoneNumber: string
   customerAddress: string
+  distributorInvoiceNumber?: string
   machine: {
     id: string
     serialNumber: string
@@ -56,8 +59,11 @@ export function SalesTable({ initialSales }: SalesTableProps) {
     const searchLower = search.toLowerCase()
     const matchesSearch =
       sale.customerName.toLowerCase().includes(searchLower) ||
+      sale.customerContactPersonName.toLowerCase().includes(searchLower) ||
+      sale.customerEmail.toLowerCase().includes(searchLower) ||
       sale.customerPhoneNumber.toLowerCase().includes(searchLower) ||
       sale.customerAddress.toLowerCase().includes(searchLower) ||
+      (sale.distributorInvoiceNumber && sale.distributorInvoiceNumber.toLowerCase().includes(searchLower)) ||
       sale.machine.serialNumber.toLowerCase().includes(searchLower) ||
       sale.machine.machineModel.name.toLowerCase().includes(searchLower) ||
       sale.machine.machineModel.category.name.toLowerCase().includes(searchLower)
@@ -105,6 +111,9 @@ export function SalesTable({ initialSales }: SalesTableProps) {
       cell: ({ row }: { row: { original: Sale } }) => (
         <div className="space-y-1">
           <div className="font-medium">{row.original.customerName}</div>
+          <div className="text-sm text-muted-foreground">
+            Contact: {row.original.customerContactPersonName}
+          </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Phone className="h-3 w-3" />
             {row.original.customerPhoneNumber}

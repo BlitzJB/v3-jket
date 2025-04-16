@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   return withPermission('equipment:write', async () => {
     try {
       const body = await req.json()
-      const { name, shortCode, description, warrantyPeriodMonths, coverImageUrl, categoryId } = body
+      const { name, shortCode, description, warrantyPeriodMonths, coverImageUrl, catalogueFileUrl, userManualFileUrl, categoryId } = body
 
       // Check if shortCode is unique
       const existing = await prisma.machineModel.findFirst({
@@ -37,6 +37,8 @@ export async function POST(req: Request) {
           description,
           warrantyPeriodMonths,
           coverImageUrl,
+          catalogueFileUrl,
+          userManualFileUrl,
           categoryId,
         },
       })

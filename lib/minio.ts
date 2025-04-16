@@ -50,5 +50,10 @@ export const ALLOWED_MIME_TYPES = [
   'image/png',
   'image/webp',
   'video/webm',
-  'video/mp4'
+  'video/mp4',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 ] 

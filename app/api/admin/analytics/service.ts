@@ -367,7 +367,7 @@ async function getOperationalKPIs(currentDate: Date) {
     }),
     prisma.user.count({
       where: {
-        role: 'ENGINEER'
+        role: 'SERVICE_ENGINEER'
       }
     })
   ])

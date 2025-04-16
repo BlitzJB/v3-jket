@@ -11,7 +11,7 @@ export async function PATCH(
   return withPermission('equipment:write', async () => {
     try {
       const body = await req.json()
-      const { name, shortCode, description, warrantyPeriodMonths, coverImageUrl } = body
+      const { name, shortCode, description, warrantyPeriodMonths, coverImageUrl, catalogueFileUrl, userManualFileUrl } = body
 
       // Check if shortCode is unique (excluding current model)
       const existing = await prisma.machineModel.findFirst({
@@ -37,6 +37,8 @@ export async function PATCH(
           description,
           warrantyPeriodMonths,
           coverImageUrl,
+          catalogueFileUrl,
+          userManualFileUrl,
         },
       })
 

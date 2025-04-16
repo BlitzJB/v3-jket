@@ -7,7 +7,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil, File } from "lucide-react"
+import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil, File, User, Phone, Mail } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,16 @@ interface Supply {
       returnDate: Date
       returnReason: string
     } | null
+    sale?: {
+      id: string
+      saleDate: Date
+      customerName: string
+      customerContactPersonName: string
+      customerEmail: string
+      customerPhoneNumber: string
+      customerAddress: string
+      distributorInvoiceNumber?: string
+    } | null
   }
   distributor: {
     id: string
@@ -64,9 +74,17 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
       supply.machine.machineModel.name.toLowerCase().includes(searchLower) ||
       supply.machine.machineModel.category.name.toLowerCase().includes(searchLower) ||
       supply.distributor.organizationName.toLowerCase().includes(searchLower) ||
-      supply.distributor.region.toLowerCase().includes(searchLower)
+      supply.distributor.region.toLowerCase().includes(searchLower) ||
+      supply.machine.sale?.customerName.toLowerCase().includes(searchLower) ||
+      supply.machine.sale?.customerContactPersonName.toLowerCase().includes(searchLower) ||
+      supply.machine.sale?.customerEmail.toLowerCase().includes(searchLower)
     )
   })
+
+  // Check if this is a direct-to-customer supply
+  const isDirectToCustomer = (supply: Supply) => {
+    return supply.distributor.organizationName === "JKET D2C"
+  }
 
   const handleGenerateDispatchCertificate = async (supply: Supply) => {
     const html = generateDispatchCertificateHTML({ machine: {
@@ -107,46 +125,98 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
     },
     {
       accessorKey: 'distributor',
-      header: 'Distributor',
-      cell: ({ row }: { row: { original: Supply } }) => (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-primary/60" />
-            {row.original.distributor.organizationName}
+      header: 'Distributor/Customer',
+      cell: ({ row }: { row: { original: Supply } }) => {
+        const isDirect = isDirectToCustomer(row.original)
+        const sale = row.original.machine.sale
+        
+        if (isDirect && sale) {
+          return (
+            <div className="flex flex-col gap-1">
+              <Badge className="mb-1 w-fit" variant="outline">Direct to Customer</Badge>
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 text-primary/60" />
+                {sale.customerName}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <User className="h-3 w-3" />
+                {sale.customerContactPersonName}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Mail className="h-3 w-3" />
+                {sale.customerEmail}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Phone className="h-3 w-3" />
+                {sale.customerPhoneNumber}
+              </div>
+              {sale.distributorInvoiceNumber && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-semibold">Invoice:</span> {sale.distributorInvoiceNumber}
+                </div>
+              )}
+            </div>
+          )
+        }
+        
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary/60" />
+              {row.original.distributor.organizationName}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Globe className="h-4 w-4" />
+              {row.original.distributor.region}
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Globe className="h-4 w-4" />
-            {row.original.distributor.region}
-          </div>
-        </div>
-      ),
+        )
+      },
     },
     {
       accessorKey: 'dates',
       header: 'Dates',
-      cell: ({ row }: { row: { original: Supply } }) => (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary/60" />
-            Supplied: {format(row.original.supplyDate, 'PP')}
+      cell: ({ row }: { row: { original: Supply } }) => {
+        const isDirect = isDirectToCustomer(row.original)
+        const sale = row.original.machine.sale
+        
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary/60" />
+              Supplied: {format(row.original.supplyDate, 'PP')}
+            </div>
+            {isDirect && sale ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                Sold: {format(sale.saleDate, 'PP')}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                Sell by: {format(row.original.sellBy, 'PP')}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            Sell by: {format(row.original.sellBy, 'PP')}
-          </div>
-        </div>
-      ),
+        )
+      },
     },
     {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }: { row: { original: Supply } }) => {
         const hasReturn = row.original.machine.return !== null
-        return (
-          <Badge variant={hasReturn ? 'destructive' : 'success'}>
-            {hasReturn ? 'Returned' : 'Active'}
-          </Badge>
-        )
+        const isDirect = isDirectToCustomer(row.original)
+        
+        if (hasReturn) {
+          return <Badge variant="destructive">Returned</Badge>
+        }
+        
+        if (isDirect && row.original.machine.sale) {
+          return <Badge variant="secondary">Sold to Customer</Badge>
+        }
+        
+        return <Badge variant="success">Active</Badge>
       },
     },
     {

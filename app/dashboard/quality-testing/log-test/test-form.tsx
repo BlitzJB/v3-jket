@@ -119,7 +119,7 @@ export function QATestForm({ categories }: QATestFormProps) {
             if (!response.ok) throw new Error('Failed to get machine count')
             const { count } = await response.json()
             
-            const dateStr = format(manufactureDate, 'dd-MM-yyyy')
+            const dateStr = format(manufactureDate, 'yyyy')
             const newSerialNumber = `${category.shortCode}-${model.shortCode}-${dateStr}-${String(count + 1).padStart(4, '0')}`
             setSerialNumber(newSerialNumber)
           } catch (error) {

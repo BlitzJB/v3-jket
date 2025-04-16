@@ -10,6 +10,8 @@ interface WarrantyCertificateProps {
       category: {
         name: string
       }
+      catalogueFileUrl?: string
+      userManualFileUrl?: string
     }
     sale: {
       saleDate: string
@@ -28,6 +30,9 @@ interface WarrantyCertificateProps {
 export function generateWarrantyCertificateHTML({ machine }: WarrantyCertificateProps) {
   const warrantyStartDate = new Date(machine.warrantyCertificate.createdAt)
   const warrantyEndDate = addMonths(warrantyStartDate, machine.machineModel.warrantyPeriodMonths)
+
+  // Check if documentation is available
+  const hasDocumentation = machine.machineModel.catalogueFileUrl || machine.machineModel.userManualFileUrl;
 
   return `
     <!DOCTYPE html>
@@ -249,6 +254,23 @@ export function generateWarrantyCertificateHTML({ machine }: WarrantyCertificate
             font-size: 13px;
             color: #34495e;
           }
+          .documentation-box {
+            background-color: #f0f7fa;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+          }
+          .documentation-link {
+            display: block;
+            color: #14332d;
+            text-decoration: none;
+            margin: 10px 0;
+            font-size: 14px;
+            font-weight: bold;
+          }
+          .documentation-link:hover {
+            text-decoration: underline;
+          }
           @media print {
             body {
               background: white;
@@ -338,6 +360,22 @@ export function generateWarrantyCertificateHTML({ machine }: WarrantyCertificate
                 </div>
               </div>
             </div>
+
+            ${hasDocumentation ? `
+            <div class="section">
+              <div class="section-title">Product Documentation</div>
+              <div class="documentation-box">
+                ${machine.machineModel.catalogueFileUrl ? `
+                <a href="${machine.machineModel.catalogueFileUrl}" class="documentation-link" target="_blank">
+                  📄 Product Catalogue
+                </a>` : ''}
+                ${machine.machineModel.userManualFileUrl ? `
+                <a href="${machine.machineModel.userManualFileUrl}" class="documentation-link" target="_blank">
+                  📚 User Manual
+                </a>` : ''}
+              </div>
+            </div>
+            ` : ''}
 
             <div class="warranty-text">
               This certifies that the ${machine.machineModel.name}, serial number ${machine.serialNumber}, 

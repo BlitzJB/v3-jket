@@ -77,6 +77,8 @@ model MachineModel {
   description          String?
   warrantyPeriodMonths Int
   coverImageUrl        String?
+  catalogueFileUrl     String?
+  userManualFileUrl    String?
   machines             Machine[]
   categoryId           String
   category             Category  @relation(fields: [categoryId], references: [id])
@@ -128,15 +130,18 @@ model Return {
 }
 
 model Sale {
-  id                  String   @id @default(cuid())
-  machineId           String   @unique
-  machine             Machine  @relation(fields: [machineId], references: [id])
-  saleDate            DateTime
-  customerName        String
-  customerPhoneNumber String
-  customerAddress     String
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  machineId               String   @unique
+  machine                 Machine  @relation(fields: [machineId], references: [id])
+  saleDate                DateTime
+  customerName            String
+  customerContactPersonName String  @default("")
+  customerEmail           String   @default("")
+  customerPhoneNumber     String
+  customerAddress         String
+  distributorInvoiceNumber String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model ServiceRequest {
