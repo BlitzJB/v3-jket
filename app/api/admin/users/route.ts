@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
       // Send welcome email
       try {
-        const loginUrl = new URL('/auth/login', request.url).toString()
+        const loginUrl = 'https://care.jket.in/auth/login'
         const emailHtml = await render(
           createElement(WelcomeEmail, {
             name: body.name,
