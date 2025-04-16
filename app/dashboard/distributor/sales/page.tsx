@@ -74,6 +74,7 @@ export default async function SalesPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow">
+          {/* @ts-ignore */}
           <SalesTable initialSales={sales} />
         </div>
       </div>
