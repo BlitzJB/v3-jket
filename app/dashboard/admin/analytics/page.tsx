@@ -13,6 +13,7 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+
   useEffect(() => {
     fetch('/api/admin/analytics')
       .then(res => {
@@ -20,8 +21,13 @@ export default function AnalyticsDashboard() {
         return res.json()
       })
       .then(setData)
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
+      .catch(err => {
+        console.error(err)
+        setError(err.message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }, [])
 
   if (error) {
