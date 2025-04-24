@@ -6,6 +6,10 @@ nextjs-portal {
   display: none;
 }
 
+.tsqd-open-btn-container {
+  display: none !important;
+}
+
 body {
   padding: 0 !important; 
   overflow: auto !important;
