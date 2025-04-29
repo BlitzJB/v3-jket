@@ -566,4 +566,4 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
       </form>
     </div>
   )
-} 
+}

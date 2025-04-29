@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useEffect, useState } from "react"
 import { ChartCard, createBarChartOptions, createPieChartOptions, createGaugeChartOptions } from "@/components/analytics/charts"
@@ -267,4 +267,4 @@ function AnalyticsSkeleton() {
       </div>
     </div>
   )
-} 
+}

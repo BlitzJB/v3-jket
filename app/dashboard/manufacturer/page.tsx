@@ -1,3 +1,4 @@
+
 export default function ManufacturerDashboard() {
   return (
     <div className="p-8">

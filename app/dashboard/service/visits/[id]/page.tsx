@@ -1,3 +1,4 @@
+
 import { notFound } from "next/navigation"
 import { format } from "date-fns"
 import { withPermission } from "@/lib/rbac/server"

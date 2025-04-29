@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server"
 import { withPermission } from "@/lib/rbac/server"
 import { getAnalyticsData } from "./service"

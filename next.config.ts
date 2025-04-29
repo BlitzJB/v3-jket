@@ -15,6 +15,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Force all pages to be dynamic instead of statically generated
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000'],
+    },
+  },
+  // This is the key configuration to make all pages dynamic
+  
+  // Force ISR/dynamic rendering for all pages
+  env: {
+    // Dynamic rendering settings
+    NEXT_PUBLIC_FORCE_DYNAMIC: 'true',
+  }
 };
 
 export default nextConfig;

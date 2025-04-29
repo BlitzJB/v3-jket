@@ -574,4 +574,4 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
       </div>
     </div>
   )
-} 
+}

@@ -1,11 +1,10 @@
+
 import { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
 import { EquipmentManager } from "./equipment-manager"
 
-export const metadata: Metadata = {
-  title: "Equipment Management | Admin Dashboard",
-  description: "Manage equipment categories and machine models",
-}
+export const dynamic = 'force-dynamic'
+
 
 export default async function EquipmentPage() {
   const categories = await prisma.category.findMany({

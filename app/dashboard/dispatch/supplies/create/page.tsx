@@ -371,4 +371,4 @@ export default function CreateSupplyPage() {
       </Card>
     </div>
   )
-} 
+}

@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
@@ -285,4 +285,4 @@ export default function SupplyDetailsPage({ params }: PageProps) {
       </div>
     </div>
   )
-} 
+}

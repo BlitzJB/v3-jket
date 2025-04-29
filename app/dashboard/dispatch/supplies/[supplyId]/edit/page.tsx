@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
@@ -271,4 +271,4 @@ export default function EditSupplyPage({ params }: PageProps) {
       </Card>
     </div>
   )
-} 
+}

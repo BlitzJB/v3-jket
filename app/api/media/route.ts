@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { uploadFile, getFileUrl, ALLOWED_MIME_TYPES } from '@/lib/minio'
+import { dynamic, revalidate } from '../route-segment-config'
+
+export { dynamic, revalidate }
 
 export async function POST(request: Request) {
   try {

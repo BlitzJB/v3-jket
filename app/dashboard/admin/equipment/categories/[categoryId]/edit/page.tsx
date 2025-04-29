@@ -196,4 +196,4 @@ export default function EditCategoryPage({ params }: EditCategoryPageProps) {
       </form>
     </div>
   )
-} 
+}

@@ -1,3 +1,4 @@
+
 import { prisma } from "@/lib/prisma"
 import { withPermission } from "@/lib/rbac/server"
 import { MachinesTable } from "../components/machines-table"

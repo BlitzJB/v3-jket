@@ -486,5 +486,4 @@ export default function CreateMachineModelPage() {
       <CreateMachineModelForm />
     </Suspense>
   )
-} 
-
+}

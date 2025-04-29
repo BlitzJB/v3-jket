@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server'
 import { transporter, emailConfig } from '@/lib/email/config'
 import { render } from '@react-email/render'

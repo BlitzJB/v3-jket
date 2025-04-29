@@ -1,11 +1,9 @@
+
 import { Metadata } from "next"
 import { prisma } from "@/lib/prisma"
 import { TestConfigManager } from "./test-config-manager"
 
-export const metadata: Metadata = {
-  title: "Test Configuration | Admin Dashboard",
-  description: "Configure test groups and tests for equipment categories",
-}
+export const dynamic = 'force-dynamic'
 
 export default async function TestConfigPage() {
   const categories = await prisma.category.findMany({

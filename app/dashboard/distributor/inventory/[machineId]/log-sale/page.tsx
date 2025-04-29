@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { useState, use } from "react"
 import { useRouter } from "next/navigation"
@@ -273,4 +273,4 @@ export default function LogSalePage({
       </div>
     </div>
   )
-} 
+}

@@ -1,6 +1,8 @@
 import { Providers } from './providers'
 import { Inter } from 'next/font/google'
 import './globals.css'
+// Import dynamic config
+import './route-segment-config'
 
 const inter = Inter({ subsets: ['latin'] })
 

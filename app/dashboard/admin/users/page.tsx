@@ -1,3 +1,4 @@
+
 import { withPermission } from "@/lib/rbac/server"
 import { prisma } from "@/lib/prisma"
 import { UserManagementTable } from "./user-management-table"
