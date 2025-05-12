@@ -249,7 +249,7 @@ export function QATestForm({ categories }: QATestFormProps) {
             </div>
             <div className="space-y-2">
               <Label>Serial Number</Label>
-              <Input value={serialNumber} disabled />
+              <Input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
             </div>
           </div>
 
