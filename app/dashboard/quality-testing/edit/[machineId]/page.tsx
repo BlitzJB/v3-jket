@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { withPermission } from "@/lib/rbac/server"
 import { notFound } from "next/navigation"
 import { EditTestForm } from "./edit-test-form"
+import { use } from "react"
 
 interface Test {
   id: string
@@ -123,9 +124,9 @@ async function getMachine(machineId: string) {
 export default async function EditQATestPage({
   params
 }: {
-  params: { machineId: string }
+  params: Promise<{ machineId: string }>
 }) {
-  const { machineId } = params
+  const { machineId } = use(params)
   const categories = await getCategories()
   const machine = await getMachine(machineId)
 
