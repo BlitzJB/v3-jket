@@ -10,7 +10,83 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { defaultTestConfig } from "@/app/dashboard/admin/equipment/test-config/test-config-manager"
+
+export const defaultTestConfig = {
+  groups: [
+    {
+      id: "mechanical",
+      name: "Mechanical Testing",
+      tests: [
+        { id: "flow-rate", name: "Flow Rate", type: "both" },
+        { id: "suction-power", name: "Suction Power", type: "both" },
+        { id: "temperature", name: "Temperature", type: "both" },
+        { id: "pressure", name: "Pressure", type: "both" },
+        { id: "running-test", name: "Hours of Running Test", type: "both" },
+        { id: "motor-bearing", name: "Motor Bearing Condition", type: "both" },
+        { id: "shaft-movement", name: "Shaft Movement", type: "both" },
+        { id: "leakages", name: "Leakages from Valves/Couplings", type: "both" },
+        { id: "hose-clamping", name: "Hose Clamping Quality", type: "both" },
+        { id: "parts-fit", name: "Parts are Fit Where It Should", type: "both" },
+        { id: "bolting", name: "Bolting Quality", type: "both" },
+        { id: "valves", name: "3 Way Valves Condition", type: "both" },
+        { id: "flow-direction", name: "Flow Direction", type: "both" }
+      ]
+    },
+    {
+      id: "electrical",
+      name: "Electrical Testing",
+      tests: [
+        { id: "terminal-box", name: "Terminal Box Quality", type: "both" },
+        { id: "terminal-supply", name: "Terminal Supply Pin", type: "both" },
+        { id: "wiring", name: "Wiring Condition", type: "both" },
+        { id: "motor-nameplate", name: "Motor Name Plate", type: "both" },
+        { id: "voltage", name: "Voltage Rating", type: "both" },
+        { id: "ampere", name: "Ampere Rating", type: "both" },
+        { id: "motor-power", name: "Motor Power", type: "both" },
+        { id: "motor-sound", name: "Motor Sound", type: "both" },
+        { id: "winding", name: "Winding Condition", type: "both" },
+        { id: "insulation", name: "Insulation Resistance Test", type: "both" },
+        { id: "stator", name: "Stator Poles", type: "both" },
+        { id: "efficiency", name: "Motor Efficiency", type: "both" },
+        { id: "polarity", name: "Polarity Test", type: "both" },
+        { id: "earth", name: "Earth Continuity Test", type: "both" },
+        { id: "shaft-speed", name: "Shaft Speed(rpm)", type: "both" }
+      ]
+    },
+    {
+      id: "electronics",
+      name: "Electronics Testing",
+      tests: [
+        { id: "display", name: "Display Quality", type: "condition" },
+        { id: "sensor", name: "Sensor Reading", type: "condition" },
+        { id: "display-inches", name: "Display Inches", type: "condition" },
+        { id: "operating-temp", name: "Operating Temperature", type: "condition" },
+        { id: "frequency", name: "Frequency as per Specification", type: "condition" },
+        { id: "power-source", name: "Power Source", type: "condition" },
+        { id: "battery", name: "IF DC Battery Capacity", type: "condition" },
+        { id: "touch", name: "Screen Touch Quality", type: "condition" }
+      ]
+    },
+    {
+      id: "physical",
+      name: "Physical Observation",
+      tests: [
+        { id: "aesthetics", name: "Visual Aesthetics", type: "condition" },
+        { id: "damage", name: "No Dent or Damage", type: "condition" },
+        { id: "sl-sticker", name: "SL No Sticker Placing", type: "condition" },
+        { id: "power-sticker", name: "Power Flush Sticker Placing", type: "condition" },
+        { id: "painting", name: "Product Painting", type: "condition" },
+        { id: "accessories", name: "All Accessories Packed", type: "condition" },
+        { id: "openings", name: "Openings Correctly Covered", type: "condition" },
+        { id: "bolt-tightness", name: "All Bolt Tightness", type: "condition" },
+        { id: "packing", name: "Final Packing Quality", type: "condition" },
+        { id: "weight", name: "Weight Checking", type: "condition" },
+        { id: "quantity", name: "Quantity Checking", type: "condition" },
+        { id: "loading", name: "Check the Handling Process of Loading", type: "condition" }
+      ]
+    }
+  ]
+}
 
 interface Test {
   id: string

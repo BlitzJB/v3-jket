@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
-import { Search, MoreVertical, Eye, QrCode, Filter, X } from "lucide-react"
+import { Search, MoreVertical, Eye, QrCode, Filter, X, Edit } from "lucide-react"
 import Image from "next/image"
 import {
     DropdownMenu,
@@ -275,6 +275,13 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
                         >
                             <Eye className="h-4 w-4 text-primary" />
                             <span>View Details</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="flex items-center gap-2 text-sm"
+                            onClick={() => router.push(`/dashboard/quality-testing/edit/${row.original.id}`)}
+                        >
+                            <Edit className="h-4 w-4 text-primary" />
+                            <span>Edit Test Results</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
