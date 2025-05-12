@@ -16,11 +16,11 @@ interface UpdateMachineBody {
 
 export async function PUT(
   req: Request,
-  { params }: { params: { machineId: string } }
+  { params }: { params: Promise<{ machineId: string }> }
 ) {
   return withPermission('quality:write', async () => {
     try {
-      const { machineId } = params
+      const { machineId } = await params
       const body = await req.json() as UpdateMachineBody
       const { testResults, additionalNotes } = body
 
@@ -61,11 +61,11 @@ export async function PUT(
 
 export async function GET(
   req: Request,
-  { params }: { params: { machineId: string } }
+  { params }: { params: Promise<{ machineId: string }> }
 ) {
   return withPermission('quality:read', async () => {
     try {
-      const { machineId } = params
+      const { machineId } = await params
       
       const machine = await prisma.machine.findUnique({
         where: { id: machineId },
