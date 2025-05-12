@@ -11,7 +11,7 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export const defaultTestConfig = {
+const defaultTestConfig = {
   groups: [
     {
       id: "mechanical",
