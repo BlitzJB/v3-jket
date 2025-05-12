@@ -21,6 +21,9 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       'quality:manage',
       'reports:read',
       'reports:write',
+      'equipment:read',
+      'equipment:write',
+      'equipment:manage',
     ],
   },
   DISPATCH_MANAGER: {
@@ -32,6 +35,9 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       'dispatch:manage',
       'inventory:read',
       'reports:read',
+      'equipment:read',
+      'equipment:write',
+      'equipment:manage',
     ],
   },
   MANUFACTURER: {
@@ -59,7 +65,8 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       'distributor:sales:read',
       'distributor:sales:write',
       'distributor:customers:read',
-      'distributor:customers:write'
+      'distributor:customers:write',
+      'equipment:read',
     ],
   },
   SERVICE_ENGINEER: {
@@ -71,6 +78,7 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       'service:manage',
       'reports:read',
       'reports:write',
+      'equipment:read',
     ],
   },
   CUSTOMER_SERVICE: {
@@ -91,6 +99,7 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       'distributor:customers:write',
       'reports:read',
       'reports:write',
+      'equipment:read',
     ],
   },
   SALES: {
@@ -105,17 +114,18 @@ export const ROLES: Record<UserRole, RoleDefinition> = {
       'distributor:customers:write',
       'reports:read',
       'reports:write',
+      'equipment:read',
     ],
   },
   USER: {
     name: 'USER',
     description: 'Standard user access',
-    permissions: ['content:read', 'content:write'],
+    permissions: ['content:read', 'content:write', 'equipment:read'],
   },
   GUEST: {
     name: 'GUEST',
     description: 'Limited read-only access',
-    permissions: ['content:read'],
+    permissions: ['content:read', 'equipment:read'],
   },
 } 
 
