@@ -126,7 +126,7 @@ export default async function EditQATestPage({
 }: {
   params: Promise<{ machineId: string }>
 }) {
-  const { machineId } = use(params)
+  const { machineId } = await params
   const categories = await getCategories()
   const machine = await getMachine(machineId)
 
