@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { format, addMonths } from "date-fns"
-import { toast } from "sonner"
+import { toast, Toaster } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
@@ -75,6 +75,8 @@ export default function CreateSupplyPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    console.log("handleSubmit")
+
     if (!selectedMachine) {
       toast.error("Please select a machine")
       return
@@ -102,10 +104,10 @@ export default function CreateSupplyPage() {
         toast.error("Please enter customer contact person name")
         return
       }
-      if (!customerEmail.trim()) {
-        toast.error("Please enter customer email")
-        return
-      }
+      // if (!customerEmail.trim()) {
+      //   toast.error("Please enter customer email")
+      //   return
+      // }
     }
 
     setIsSubmitting(true)
@@ -138,8 +140,9 @@ export default function CreateSupplyPage() {
       toast.success(supplyType === "distributor" 
         ? "Supply logged successfully" 
         : "Direct-to-customer supply logged successfully")
-      router.push("/dashboard/dispatch/supplies")
-      router.refresh()
+      console.log("Supply logged successfully")
+      // router.push("/dashboard/dispatch/supplies")
+      // router.refresh()
     } catch (error) {
       console.error(error)
       toast.error(error instanceof Error ? error.message : "Failed to log supply")
@@ -150,6 +153,7 @@ export default function CreateSupplyPage() {
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
+      <Toaster />
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Log New Supply</h1>
         <p className="text-muted-foreground mt-1">
@@ -158,7 +162,7 @@ export default function CreateSupplyPage() {
       </div>
 
       <Card>
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form className="p-6 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Machine</label>
