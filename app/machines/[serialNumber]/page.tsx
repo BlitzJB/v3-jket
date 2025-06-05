@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { format, addMonths, isBefore, formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, Box, Calendar, FileText, Building2, Phone, MapPin, FileWarning, Printer, Clock, ShieldCheck, Loader2 } from 'lucide-react'
+import { ArrowLeft, Box, Calendar, FileText, Building2, Phone, MapPin, FileWarning, Printer, Clock, ShieldCheck, Loader2, Eye, Download } from 'lucide-react'
 import Link from 'next/link'
 import { usePdfGenerator } from '@/hooks/use-pdf-generator'
 import { Input } from '@/components/ui/input'
@@ -88,6 +89,9 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
     zipCode: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const { generatePdf, isGenerating } = usePdfGenerator()
 
   useEffect(() => {
@@ -215,14 +219,43 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
           }
         }
       })
-      const pdfBlob = await generatePdf({ html })
-      const url = URL.createObjectURL(pdfBlob)
-      window.open(url)
-      URL.revokeObjectURL(url)
+      const blob = await generatePdf({ html })
+      setPdfBlob(blob)
+      
+      // Create URL for preview
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
+      const url = URL.createObjectURL(blob)
+      setPdfUrl(url)
+      setShowPreview(true)
     } catch (error) {
       console.error('Error generating warranty certificate:', error)
       toast.error('Failed to generate warranty certificate')
     }
+  }
+
+  const handleDownload = () => {
+    if (!pdfBlob || !machine) return
+    
+    const url = URL.createObjectURL(pdfBlob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `warranty-certificate-${machine.serialNumber}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toast.success('Certificate downloaded successfully')
+  }
+
+  const handleClosePreview = () => {
+    setShowPreview(false)
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl)
+      setPdfUrl(null)
+    }
+    setPdfBlob(null)
   }
 
   if (loading) {
@@ -557,9 +590,22 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
                   <div className="mt-4">
                     <h3 className="font-semibold mb-2">Warranty Certificate</h3>
                     <div className="flex items-center gap-2">
-                      <Button variant="outline" onClick={handleGenerateWarrantyCertificate}>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Print Certificate
+                      <Button 
+                        variant="outline" 
+                        onClick={handleGenerateWarrantyCertificate}
+                        disabled={isGenerating}
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview Certificate
+                          </>
+                        )}
                       </Button>
                       <p className="text-sm text-muted-foreground">
                         Registered on {format(new Date(machine.warrantyCertificate.createdAt), 'PPP')}
@@ -572,6 +618,35 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
           </Card>
         </div>
       </div>
+
+      {/* PDF Preview Modal */}
+      <Dialog open={showPreview} onOpenChange={handleClosePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>Warranty Certificate Preview</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-2">
+            {pdfUrl && (
+              <div className="w-full h-[60vh] border rounded-lg overflow-hidden">
+                <iframe
+                  src={pdfUrl}
+                  className="w-full h-full"
+                  title="Warranty Certificate Preview"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter className="p-6 pt-2">
+            <Button variant="outline" onClick={handleClosePreview}>
+              Close
+            </Button>
+            <Button onClick={handleDownload}>
+              <Download className="mr-2 h-4 w-4" />
+              Download PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
