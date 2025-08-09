@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { withPermission } from '@/lib/rbac/server'
 import { ROLES } from '@/lib/rbac/roles'
+import { auth } from '@/auth'
 import { z } from 'zod'
 import { render } from '@react-email/render'
 import { WelcomeEmail } from '@/components/emails/welcome-email'
@@ -26,6 +27,9 @@ export async function POST(request: Request) {
     const body = createUserSchema.parse(json)
 
     return withPermission('users:write', async () => {
+      const session = await auth()
+      const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN'
+
       const exists = await prisma.user.findUnique({
         where: { email: body.email },
       })
@@ -43,7 +47,7 @@ export async function POST(request: Request) {
         data: {
           ...body,
           password: hashedPassword,
-          approved: true, // Auto-approve users created by admin
+          approved: isSuperAdmin, // Only auto-approve users created by SUPER_ADMIN
         },
         select: {
           id: true,

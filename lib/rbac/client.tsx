@@ -12,6 +12,9 @@ export function usePermission(permission: Permission): boolean {
   const userRole = session.user.role as keyof typeof ROLES
   if (!userRole || !ROLES[userRole]) return false
 
+  // Check for wildcard permission (SUPER_ADMIN)
+  if (ROLES[userRole].permissions.includes('*')) return true
+  
   return ROLES[userRole].permissions.includes(permission)
 }
 

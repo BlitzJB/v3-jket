@@ -7,7 +7,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
-  return withPermission("users:write", async () => {
+  return withPermission("users:approve", async () => {
     const { userId } = await params
     const { approved } = await req.json()
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { usePermission } from "@/lib/rbac/client"
 import { Building2, Phone, Globe, MoreVertical, Check, X, Pencil, Search } from "lucide-react"
 import {
   DropdownMenu,
@@ -37,6 +38,7 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
   const router = useRouter()
   const [users, setUsers] = useState(initialUsers)
   const [search, setSearch] = useState("")
+  const canApproveUsers = usePermission('users:approve')
 
   const handleApproval = async (userId: string, approved: boolean) => {
     try {
@@ -151,23 +153,27 @@ export function UsersTable({ initialUsers }: UsersTableProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem
-              onClick={() => handleApproval(row.original.id, !row.original.approved)}
-              className="flex items-center gap-2 text-sm"
-            >
-              {row.original.approved ? (
-                <>
-                  <X className="h-4 w-4 text-destructive" />
-                  <span>Revoke Access</span>
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 text-success" />
-                  <span>Approve User</span>
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {canApproveUsers && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => handleApproval(row.original.id, !row.original.approved)}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  {row.original.approved ? (
+                    <>
+                      <X className="h-4 w-4 text-destructive" />
+                      <span>Revoke Access</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 text-success" />
+                      <span>Approve User</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <Link href={`/dashboard/customer-service/users/${row.original.id}/edit`}>
               <DropdownMenuItem
                 className="flex items-center gap-2 text-sm"

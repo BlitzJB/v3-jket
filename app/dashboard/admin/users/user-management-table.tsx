@@ -7,6 +7,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import { usePermission } from "@/lib/rbac/client"
 import { Building2, Phone, Globe, MoreVertical, Check, X, Pencil, Search, Filter, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
@@ -49,6 +50,7 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
   const [searchQuery, setSearchQuery] = useState("")
   const [showPendingOnly, setShowPendingOnly] = useState(false)
   const [userToDelete, setUserToDelete] = useState<User | null>(null)
+  const canApproveUsers = usePermission('users:approve')
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -181,23 +183,27 @@ export function UserManagementTable({ initialUsers }: UserManagementTableProps) 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem
-              onClick={() => handleApproval(row.original.id, !row.original.approved)}
-              className="flex items-center gap-2 text-sm"
-            >
-              {row.original.approved ? (
-                <>
-                  <X className="h-4 w-4 text-destructive" />
-                  <span>Revoke Access</span>
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 text-success" />
-                  <span>Approve User</span>
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {canApproveUsers && (
+              <>
+                <DropdownMenuItem
+                  onClick={() => handleApproval(row.original.id, !row.original.approved)}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  {row.original.approved ? (
+                    <>
+                      <X className="h-4 w-4 text-destructive" />
+                      <span>Revoke Access</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 text-success" />
+                      <span>Approve User</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            )}
             <Link href={`/dashboard/admin/users/${row.original.id}/edit`}>
               <DropdownMenuItem
                 className="flex items-center gap-2 text-sm"

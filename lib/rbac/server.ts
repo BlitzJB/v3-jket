@@ -43,6 +43,16 @@ export async function withPermission<T>(
   return handler()
 }
 
+export async function withSuperAdminOnly<T>(
+  handler: () => Promise<T>
+): Promise<T> {
+  const session = await auth()
+  if (session?.user?.role !== 'SUPER_ADMIN') {
+    throw new Error('Unauthorized: SUPER_ADMIN access required')
+  }
+  return handler()
+}
+
 // Example usage in an API route:
 /*
 export async function GET() {

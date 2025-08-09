@@ -6,6 +6,7 @@ export type Permission =
   | 'users:write'
   | 'users:delete'
   | 'users:manage'
+  | 'users:approve'
   | 'content:read'
   | 'content:write'
   | 'content:delete'
