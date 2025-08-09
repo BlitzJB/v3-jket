@@ -23,6 +23,7 @@ async function getSuppliesData() {
               },
             },
             return: true,
+            sale: true,
           },
         },
         distributor: true,
@@ -33,7 +34,7 @@ async function getSuppliesData() {
     })
 
     // Filter out supplies where machine is null and map to our interface
-    return supplies
+    const mappedSupplies = supplies
       .filter((supply) => supply.machine !== null)
       .map((supply) => ({
         id: supply.id,
@@ -57,6 +58,16 @@ async function getSuppliesData() {
             returnDate: supply.machine!.return.returnDate,
             returnReason: supply.machine!.return.returnReason,
           } : null,
+          sale: supply.machine!.sale ? {
+            id: supply.machine!.sale.id,
+            saleDate: supply.machine!.sale.saleDate,
+            customerName: supply.machine!.sale.customerName,
+            customerContactPersonName: supply.machine!.sale.customerContactPersonName,
+            customerEmail: supply.machine!.sale.customerEmail,
+            customerPhoneNumber: supply.machine!.sale.customerPhoneNumber,
+            customerAddress: supply.machine!.sale.customerAddress,
+            distributorInvoiceNumber: supply.machine!.sale.distributorInvoiceNumber,
+          } : null,
         },
         distributor: {
           id: supply.distributor.id,
@@ -65,6 +76,22 @@ async function getSuppliesData() {
           region: supply.distributor.region || '',
         },
       }))
+
+    // Debug logging for JKET D2C supplies
+    const jketD2CSupplies = mappedSupplies.filter(s => s.distributor.organizationName === "JKET D2C")
+    console.log('JKET D2C Supplies Debug:', {
+      totalSupplies: supplies.length,
+      jketD2CCount: jketD2CSupplies.length,
+      jketD2CWithSale: jketD2CSupplies.filter(s => s.machine.sale !== null).length,
+      jketD2CWithoutSale: jketD2CSupplies.filter(s => s.machine.sale === null).length,
+      sampleData: jketD2CSupplies.slice(0, 2).map(s => ({
+        serialNumber: s.machine.serialNumber,
+        hasSale: !!s.machine.sale,
+        saleCustomerName: s.machine.sale?.customerName || 'NO SALE DATA'
+      }))
+    })
+
+    return mappedSupplies
   })
 }
 

@@ -130,6 +130,19 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
         const isDirect = isDirectToCustomer(row.original)
         const sale = row.original.machine.sale
         
+        // Debug logging for production issue
+        if (isDirect) {
+          console.log('JKET D2C Entry:', {
+            serialNumber: row.original.machine.serialNumber,
+            hasSale: !!sale,
+            saleData: sale ? {
+              customerName: sale.customerName,
+              customerEmail: sale.customerEmail,
+              customerPhone: sale.customerPhoneNumber
+            } : null
+          })
+        }
+        
         if (isDirect && sale) {
           return (
             <div className="flex flex-col gap-1">
@@ -155,6 +168,22 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
                   <span className="font-semibold">Invoice:</span> {sale.distributorInvoiceNumber}
                 </div>
               )}
+            </div>
+          )
+        }
+        
+        // Handle JKET D2C without sale data
+        if (isDirect && !sale) {
+          return (
+            <div className="flex flex-col gap-1">
+              <Badge className="mb-1 w-fit" variant="outline">Direct to Customer</Badge>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Building2 className="h-4 w-4" />
+                {row.original.distributor.organizationName}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                ⚠️ Sale data missing
+              </div>
             </div>
           )
         }
