@@ -47,7 +47,7 @@ interface Supply {
       customerEmail: string
       customerPhoneNumber: string
       customerAddress: string
-      distributorInvoiceNumber?: string
+      distributorInvoiceNumber?: string | null
     } | null
   }
   distributor: {
