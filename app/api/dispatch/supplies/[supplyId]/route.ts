@@ -73,7 +73,21 @@ export async function PATCH(
     try {
       const { supplyId } = await params
       const body = await request.json()
-      const { machineId, distributorId, supplyDate, sellBy, notes } = body
+      const { 
+        machineId, 
+        distributorId, 
+        supplyDate, 
+        sellBy, 
+        notes,
+        isDirectToCustomer,
+        customerName,
+        customerContactPersonName,
+        customerEmail,
+        customerPhoneNumber,
+        customerAddress,
+        distributorInvoiceNumber,
+        saleDate
+      } = body
 
       // Check if supply exists
       const existingSupply = await prisma.supply.findUnique({
@@ -111,7 +125,7 @@ export async function PATCH(
         }
       }
 
-      // Update supply with transaction to handle machine changes
+      // Update supply with transaction to handle machine changes and customer info
       const supply = await prisma.$transaction(async (tx) => {
         // If machine is changing, we need to handle the transition
         if (machineId && machineId !== existingSupply.machineId) {
@@ -126,7 +140,7 @@ export async function PATCH(
           })
 
           // Then update the supply with the new machine
-          return await tx.supply.update({
+          const updatedSupply = await tx.supply.update({
             where: { id: supplyId },
             data: {
               machine: {
@@ -152,14 +166,53 @@ export async function PATCH(
                     },
                   },
                   return: true,
+                  sale: true,
                 },
               },
               distributor: true,
             },
           })
+
+          // If this is a D2C supply, update or create sale record
+          if (isDirectToCustomer && customerName && customerPhoneNumber && customerAddress) {
+            // Check if a sale record already exists
+            const existingSale = await tx.sale.findUnique({
+              where: { machineId: machineId },
+            })
+
+            if (existingSale) {
+              await tx.sale.update({
+                where: { machineId: machineId },
+                data: {
+                  saleDate: new Date(saleDate || supplyDate),
+                  customerName,
+                  customerContactPersonName,
+                  customerEmail,
+                  customerPhoneNumber,
+                  customerAddress,
+                  distributorInvoiceNumber,
+                },
+              })
+            } else {
+              await tx.sale.create({
+                data: {
+                  machineId: machineId,
+                  saleDate: new Date(saleDate || supplyDate),
+                  customerName,
+                  customerContactPersonName,
+                  customerEmail,
+                  customerPhoneNumber,
+                  customerAddress,
+                  distributorInvoiceNumber,
+                },
+              })
+            }
+          }
+
+          return updatedSupply
         } else {
           // If machine is not changing, just update other fields
-          return await tx.supply.update({
+          const updatedSupply = await tx.supply.update({
             where: { id: supplyId },
             data: {
               distributor: {
@@ -180,11 +233,50 @@ export async function PATCH(
                     },
                   },
                   return: true,
+                  sale: true,
                 },
               },
               distributor: true,
             },
           })
+
+          // If this is a D2C supply, update sale record
+          if (isDirectToCustomer && customerName && customerPhoneNumber && customerAddress) {
+            // Check if a sale record already exists
+            const existingSale = await tx.sale.findUnique({
+              where: { machineId: existingSupply.machineId },
+            })
+
+            if (existingSale) {
+              await tx.sale.update({
+                where: { machineId: existingSupply.machineId },
+                data: {
+                  saleDate: new Date(saleDate || supplyDate),
+                  customerName,
+                  customerContactPersonName,
+                  customerEmail,
+                  customerPhoneNumber,
+                  customerAddress,
+                  distributorInvoiceNumber,
+                },
+              })
+            } else {
+              await tx.sale.create({
+                data: {
+                  machineId: existingSupply.machineId,
+                  saleDate: new Date(saleDate || supplyDate),
+                  customerName,
+                  customerContactPersonName,
+                  customerEmail,
+                  customerPhoneNumber,
+                  customerAddress,
+                  distributorInvoiceNumber,
+                },
+              })
+            }
+          }
+
+          return updatedSupply
         }
       })
 
