@@ -6,38 +6,54 @@ import { ROLES } from './roles'
 import { type ReactNode } from 'react'
 
 export function usePermission(permission: Permission): boolean {
-  const session = useSession()
-  
-  // Handle cases where useSession returns undefined or null
-  if (!session || typeof session !== 'object') return false
-  
-  const sessionData = session.data
-  console.log('session', sessionData)
-  
-  if (!sessionData?.user) return false
+  try {
+    const session = useSession()
+    
+    // Handle cases where useSession returns undefined or null
+    if (!session || typeof session !== 'object') return false
+    
+    // Handle loading state
+    if (session.status === 'loading') return false
+    
+    const sessionData = session.data
+    console.log('session', sessionData)
+    
+    if (!sessionData?.user) return false
 
-  const userRole = sessionData.user.role as keyof typeof ROLES
-  if (!userRole || !ROLES[userRole]) return false
+    const userRole = sessionData.user.role as keyof typeof ROLES
+    if (!userRole || !ROLES[userRole]) return false
 
-  // Check for wildcard permission (SUPER_ADMIN)
-  if (ROLES[userRole].permissions.includes('*')) return true
-  
-  return ROLES[userRole].permissions.includes(permission)
+    // Check for wildcard permission (SUPER_ADMIN)
+    if (ROLES[userRole].permissions.includes('*')) return true
+    
+    return ROLES[userRole].permissions.includes(permission)
+  } catch (error) {
+    console.error('Error in usePermission:', error)
+    return false
+  }
 }
 
 export function usePermissions(): Permission[] {
-  const session = useSession()
-  
-  // Handle cases where useSession returns undefined or null
-  if (!session || typeof session !== 'object') return []
-  
-  const sessionData = session.data
-  if (!sessionData?.user) return []
+  try {
+    const session = useSession()
+    
+    // Handle cases where useSession returns undefined or null
+    if (!session || typeof session !== 'object') return []
+    
+    // Handle loading state
+    if (session.status === 'loading') return []
+    
+    const sessionData = session.data
+    if (!sessionData?.user) return []
 
-  const userRole = sessionData.user.role as keyof typeof ROLES
-  if (!userRole || !ROLES[userRole]) return []
+    const userRole = sessionData.user.role as keyof typeof ROLES
+    if (!userRole || !ROLES[userRole]) return []
 
-  return ROLES[userRole].permissions
+    return ROLES[userRole].permissions
+  } catch (error) {
+    console.error('Error in usePermissions:', error)
+    return []
+  }
 }
 
 interface RequirePermissionProps {
