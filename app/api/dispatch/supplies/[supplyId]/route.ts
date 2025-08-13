@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { withPermission } from "@/lib/rbac/server"
 
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ supplyId: string }> }
 ) {
   return withPermission('dispatch:read', async () => {
@@ -30,7 +30,7 @@ export async function GET(
         },
       })
 
-      if (!supply) {
+      if (!supply || !supply.machine) {
         return new NextResponse("Supply not found", { status: 404 })
       }
 
@@ -197,7 +197,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ supplyId: string }> }
 ) {
   const { supplyId } = await params
@@ -221,7 +221,7 @@ export async function DELETE(
         },
       })
 
-      if (!supply) {
+      if (!supply || !supply.machine) {
         return new NextResponse("Supply not found", { status: 404 })
       }
 
