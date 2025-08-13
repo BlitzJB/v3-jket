@@ -351,35 +351,6 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
                   </div>
                 </div>
 
-                {(machine.machineModel.catalogueFileUrl || machine.machineModel.userManualFileUrl) && (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-sm font-medium">Documentation</p>
-                    <div className="flex flex-wrap gap-2">
-                      {machine.machineModel.catalogueFileUrl && (
-                        <a 
-                          href={machine.machineModel.catalogueFileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-primary hover:underline"
-                        >
-                          <FileText className="h-4 w-4" />
-                          Product Catalogue
-                        </a>
-                      )}
-                      {machine.machineModel.userManualFileUrl && (
-                        <a 
-                          href={machine.machineModel.userManualFileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-primary hover:underline"
-                        >
-                          <FileText className="h-4 w-4" />
-                          User Manual
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {machine.sale && (
@@ -588,28 +559,66 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
                   </div>
 
                   <div className="mt-4">
-                    <h3 className="font-semibold mb-2">Warranty Certificate</h3>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        onClick={handleGenerateWarrantyCertificate}
-                        disabled={isGenerating}
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Preview Certificate
-                          </>
-                        )}
-                      </Button>
-                      <p className="text-sm text-muted-foreground">
-                        Registered on {format(new Date(machine.warrantyCertificate.createdAt), 'PPP')}
-                      </p>
+                    <h3 className="font-semibold mb-4">Documents & Certificates</h3>
+                    <div className="space-y-3">
+                      {/* Warranty Certificate */}
+                      <div className="flex items-center gap-3">
+                        <Button 
+                          variant="outline" 
+                          onClick={handleGenerateWarrantyCertificate}
+                          disabled={isGenerating}
+                          className="min-w-[160px]"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Generating...
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="mr-2 h-4 w-4" />
+                              Warranty Certificate
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-sm text-muted-foreground">
+                          Registered on {format(new Date(machine.warrantyCertificate.createdAt), 'PPP')}
+                        </p>
+                      </div>
+
+                      {/* Product Catalogue */}
+                      {machine.machineModel.catalogueFileUrl && (
+                        <div className="flex items-center gap-3">
+                          <Button 
+                            variant="outline"
+                            onClick={() => window.open(machine.machineModel.catalogueFileUrl, '_blank')}
+                            className="min-w-[160px]"
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            Product Catalogue
+                          </Button>
+                          <p className="text-sm text-muted-foreground">
+                            Product specifications and details
+                          </p>
+                        </div>
+                      )}
+
+                      {/* User Manual */}
+                      {machine.machineModel.userManualFileUrl && (
+                        <div className="flex items-center gap-3">
+                          <Button 
+                            variant="outline"
+                            onClick={() => window.open(machine.machineModel.userManualFileUrl, '_blank')}
+                            className="min-w-[160px]"
+                          >
+                            <FileText className="mr-2 h-4 w-4" />
+                            User Manual
+                          </Button>
+                          <p className="text-sm text-muted-foreground">
+                            Installation and operation guide
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>

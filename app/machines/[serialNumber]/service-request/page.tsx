@@ -9,6 +9,7 @@ import { MediaCapture } from '@/components/ui/media-capture'
 import { MediaFile } from '@/types/media-capture'
 import { Camera, X, Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { usePresignedUpload } from '@/hooks/use-presigned-upload'
 
 type Attachment = {
   url: string
@@ -28,31 +29,22 @@ export default function ServiceRequestPage({
   const [isCaptureOpen, setIsCaptureOpen] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const { uploadFile } = usePresignedUpload()
 
   const handleCapture = async (mediaFile: MediaFile) => {
     setIsUploading(true)
     try {
-      const formData = new FormData()
-      formData.append('file', mediaFile.file)
-
-      const response = await fetch('/api/media', {
-        method: 'POST',
-        body: formData,
+      const result = await uploadFile(mediaFile.file, {
+        onSuccess: (uploadResult) => {
+          setAttachments(prev => [...prev, {
+            url: uploadResult.publicUrl,
+            objectName: uploadResult.objectName,
+            type: mediaFile.type
+          }])
+        }
       })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
-      }
-
-      const data = await response.json()
-      setAttachments(prev => [...prev, {
-        url: data.url,
-        objectName: data.objectName,
-        type: mediaFile.type
-      }])
     } catch (error) {
       console.error('Error uploading media:', error)
-      toast.error('Failed to upload media')
     } finally {
       setIsUploading(false)
       setIsCaptureOpen(false)

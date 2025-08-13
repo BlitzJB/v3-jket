@@ -261,13 +261,13 @@ export function EquipmentManager({ initialCategories }: EquipmentManagerProps) {
                       <span className="font-mono">{category.shortCode}</span> • {category.machineModels.length} models
                     </div>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
-                      className="h-8 w-8 p-0 hover:bg-primary/10"
+                      className="h-8 w-8 p-0 hover:bg-primary/10 flex-shrink-0 ml-1"
                     >
                       <MoreVertical className="h-4 w-4" />
                     </Button>

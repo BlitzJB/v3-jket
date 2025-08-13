@@ -42,13 +42,14 @@ interface Distributor {
 }
 
 interface PickerDialogProps {
-  type: 'machine' | 'distributor' | 'supplied-machine'
+  type: 'machine' | 'distributor' | 'supplied-machine' | 'editable-machine'
   onSelect: (item: Machine | Distributor) => void
   buttonText: string
   selectedId?: string
+  currentSupplyId?: string // For editable-machine type to include currently supplied machine
 }
 
-export function PickerDialog({ type, onSelect, buttonText, selectedId }: PickerDialogProps) {
+export function PickerDialog({ type, onSelect, buttonText, selectedId, currentSupplyId }: PickerDialogProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
@@ -57,7 +58,16 @@ export function PickerDialog({ type, onSelect, buttonText, selectedId }: PickerD
   useEffect(() => {
     if (open) {
       setLoading(true)
-      const endpoint = type === 'supplied-machine' ? '/api/dispatch/supplied-machines' : `/api/dispatch/${type}s`
+      let endpoint: string
+      
+      if (type === 'supplied-machine') {
+        endpoint = '/api/dispatch/supplied-machines'
+      } else if (type === 'editable-machine') {
+        endpoint = `/api/dispatch/machines/available-for-supply${currentSupplyId ? `?currentSupplyId=${currentSupplyId}` : ''}`
+      } else {
+        endpoint = `/api/dispatch/${type}s`
+      }
+      
       fetch(endpoint)
         .then((res) => res.json())
         .then((data) => {
@@ -69,11 +79,11 @@ export function PickerDialog({ type, onSelect, buttonText, selectedId }: PickerD
           setLoading(false)
         })
     }
-  }, [open, type])
+  }, [open, type, currentSupplyId])
 
   const filteredItems = items.filter((item) => {
     const searchLower = search.toLowerCase()
-    if (type === 'machine' || type === 'supplied-machine') {
+    if (type === 'machine' || type === 'supplied-machine' || type === 'editable-machine') {
       const machine = item as Machine
       return (
         machine.serialNumber.toLowerCase().includes(searchLower) ||

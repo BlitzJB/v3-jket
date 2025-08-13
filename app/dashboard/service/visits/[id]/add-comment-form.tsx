@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { Paperclip, Loader2 } from "lucide-react"
 import { MediaFile } from "@/types/media-capture"
+import { usePresignedUpload } from '@/hooks/use-presigned-upload'
 
 interface AddCommentFormProps {
   visitId: string
@@ -16,9 +17,11 @@ interface AddCommentFormProps {
 export function AddCommentForm({ visitId }: AddCommentFormProps) {
   const router = useRouter()
   const [comment, setComment] = useState("")
-  const [attachments, setAttachments] = useState<MediaFile[]>([])
+  const [attachments, setAttachments] = useState<{url: string, objectName: string, name: string}[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showMediaCapture, setShowMediaCapture] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const { uploadFile } = usePresignedUpload()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -34,9 +37,9 @@ export function AddCommentForm({ visitId }: AddCommentFormProps) {
         },
         body: JSON.stringify({
           comment,
-          attachments: attachments.map(file => ({
-            name: file.file.name,
-            objectName: file.id
+          attachments: attachments.map(attachment => ({
+            name: attachment.name,
+            objectName: attachment.objectName
           }))
         }),
       })
@@ -61,9 +64,24 @@ export function AddCommentForm({ visitId }: AddCommentFormProps) {
     }
   }
 
-  function handleCapture(file: MediaFile) {
-    setAttachments(prev => [...prev, file])
-    setShowMediaCapture(false)
+  async function handleCapture(file: MediaFile) {
+    setIsUploading(true)
+    try {
+      const result = await uploadFile(file.file, {
+        onSuccess: (uploadResult) => {
+          setAttachments(prev => [...prev, {
+            url: uploadResult.publicUrl,
+            objectName: uploadResult.objectName,
+            name: file.file.name
+          }])
+        }
+      })
+    } catch (error) {
+      console.error('Error uploading media:', error)
+    } finally {
+      setIsUploading(false)
+      setShowMediaCapture(false)
+    }
   }
 
   function removeAttachment(index: number) {
@@ -80,13 +98,13 @@ export function AddCommentForm({ visitId }: AddCommentFormProps) {
       />
       {attachments.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {attachments.map((file, index) => (
+          {attachments.map((attachment, index) => (
             <div
               key={index}
               className="inline-flex items-center gap-2 bg-secondary px-2 py-1 rounded-md text-xs"
             >
               <Paperclip className="h-3 w-3" />
-              {file.file.name}
+              {attachment.name}
               <button
                 type="button"
                 onClick={() => removeAttachment(index)}
@@ -104,11 +122,21 @@ export function AddCommentForm({ visitId }: AddCommentFormProps) {
           variant="outline"
           size="sm"
           onClick={() => setShowMediaCapture(true)}
+          disabled={isUploading}
         >
-          <Paperclip className="h-4 w-4 mr-2" />
-          Add Attachment
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Paperclip className="h-4 w-4 mr-2" />
+              Add Attachment
+            </>
+          )}
         </Button>
-        <Button type="submit" disabled={isSubmitting || !comment.trim()}>
+        <Button type="submit" disabled={isSubmitting || isUploading || !comment.trim()}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Add Comment
         </Button>

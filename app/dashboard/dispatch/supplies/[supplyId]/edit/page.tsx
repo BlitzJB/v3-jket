@@ -17,6 +17,17 @@ import { CalendarIcon } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { PickerDialog } from "../../picker-dialog"
 
+interface Machine {
+  id: string
+  serialNumber: string
+  machineModel: {
+    name: string
+    category: {
+      name: string
+    }
+  }
+}
+
 interface Supply {
   id: string
   supplyDate: string
@@ -49,6 +60,10 @@ function isDistributor(item: any): item is Distributor {
   return 'organizationName' in item && !('serialNumber' in item)
 }
 
+function isMachine(item: any): item is Machine {
+  return 'serialNumber' in item && !('organizationName' in item)
+}
+
 interface PageProps {
   params: Promise<{
     supplyId: string
@@ -63,6 +78,16 @@ export default function EditSupplyPage({ params }: PageProps) {
   const [selectedDistributor, setSelectedDistributor] = useState<{
     id: string
     organizationName: string
+  } | null>(null)
+  const [selectedMachine, setSelectedMachine] = useState<{
+    id: string
+    serialNumber: string
+    machineModel: {
+      name: string
+      category: {
+        name: string
+      }
+    }
   } | null>(null)
   const [supplyDate, setSupplyDate] = useState<Date>(new Date())
   const [sellBy, setSellBy] = useState<Date>(addMonths(new Date(), 6))
@@ -81,6 +106,16 @@ export default function EditSupplyPage({ params }: PageProps) {
           id: data.distributor.id,
           organizationName: data.distributor.organizationName,
         })
+        setSelectedMachine({
+          id: data.machine.id,
+          serialNumber: data.machine.serialNumber,
+          machineModel: {
+            name: data.machine.machineModel.name,
+            category: {
+              name: data.machine.machineModel.category.name
+            }
+          }
+        })
         setSupplyDate(new Date(data.supplyDate))
         setSellBy(new Date(data.sellBy))
         setNotes(data.notes || "")
@@ -98,8 +133,8 @@ export default function EditSupplyPage({ params }: PageProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!selectedDistributor || !supply) {
-      toast.error("Please select a distributor")
+    if (!selectedDistributor || !selectedMachine || !supply) {
+      toast.error("Please select both distributor and machine")
       return
     }
 
@@ -109,6 +144,7 @@ export default function EditSupplyPage({ params }: PageProps) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          machineId: selectedMachine.id,
           distributorId: selectedDistributor.id,
           supplyDate,
           sellBy,
@@ -152,7 +188,7 @@ export default function EditSupplyPage({ params }: PageProps) {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Edit Supply</h1>
         <p className="text-muted-foreground mt-1">
-          Update supply details for machine {supply.machine.serialNumber}
+          Update supply details and assigned machine
         </p>
       </div>
 
@@ -161,12 +197,26 @@ export default function EditSupplyPage({ params }: PageProps) {
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-2 block">Machine</label>
-              <div className="p-3 bg-muted rounded-md">
-                <div className="font-medium">{supply.machine.serialNumber}</div>
-                <div className="text-sm text-muted-foreground">
-                  {supply.machine.machineModel.name} - {supply.machine.machineModel.category.name}
-                </div>
-              </div>
+              <PickerDialog
+                type="editable-machine"
+                buttonText={selectedMachine ? `${selectedMachine.serialNumber} - ${selectedMachine.machineModel.name}` : "Select Machine"}
+                onSelect={(item) => {
+                  if (isMachine(item)) {
+                    setSelectedMachine({
+                      id: item.id,
+                      serialNumber: item.serialNumber,
+                      machineModel: {
+                        name: item.machineModel.name,
+                        category: {
+                          name: item.machineModel.category.name
+                        }
+                      }
+                    })
+                  }
+                }}
+                selectedId={selectedMachine?.id}
+                currentSupplyId={supplyId}
+              />
             </div>
 
             <div>

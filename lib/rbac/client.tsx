@@ -6,10 +6,17 @@ import { ROLES } from './roles'
 import { type ReactNode } from 'react'
 
 export function usePermission(permission: Permission): boolean {
-  const { data: session } = useSession()
-  if (!session?.user) return false
+  const session = useSession()
+  
+  // Handle cases where useSession returns undefined or null
+  if (!session || typeof session !== 'object') return false
+  
+  const sessionData = session.data
+  console.log('session', sessionData)
+  
+  if (!sessionData?.user) return false
 
-  const userRole = session.user.role as keyof typeof ROLES
+  const userRole = sessionData.user.role as keyof typeof ROLES
   if (!userRole || !ROLES[userRole]) return false
 
   // Check for wildcard permission (SUPER_ADMIN)
@@ -19,10 +26,15 @@ export function usePermission(permission: Permission): boolean {
 }
 
 export function usePermissions(): Permission[] {
-  const { data: session } = useSession()
-  if (!session?.user) return []
+  const session = useSession()
+  
+  // Handle cases where useSession returns undefined or null
+  if (!session || typeof session !== 'object') return []
+  
+  const sessionData = session.data
+  if (!sessionData?.user) return []
 
-  const userRole = session.user.role as keyof typeof ROLES
+  const userRole = sessionData.user.role as keyof typeof ROLES
   if (!userRole || !ROLES[userRole]) return []
 
   return ROLES[userRole].permissions

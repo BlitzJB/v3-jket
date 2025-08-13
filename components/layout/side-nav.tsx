@@ -57,7 +57,7 @@ export function SideNav({ items }: SideNavProps) {
         <Button
           variant="ghost"
           className="w-full justify-start text-muted-foreground hover:text-foreground"
-          onClick={() => signOut()}
+          onClick={() => signOut({ callbackUrl: "/" })}
         >
           <LogOut className="w-4 h-4 mr-3" />
           Logout

@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Camera, Loader2, X, FileText } from 'lucide-react'
+import { usePresignedUpload, UploadProgress } from '@/hooks/use-presigned-upload'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +56,12 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
+  const [coverImageProgress, setCoverImageProgress] = useState<UploadProgress>({ loaded: 0, total: 0, percentage: 0 })
+  const [catalogueProgress, setCatalogueProgress] = useState<UploadProgress>({ loaded: 0, total: 0, percentage: 0 })
+  const [manualProgress, setManualProgress] = useState<UploadProgress>({ loaded: 0, total: 0, percentage: 0 })
+  
+  const { uploadFile } = usePresignedUpload()
+  const [isUploadingCover, setIsUploadingCover] = useState(false)
   const [isUploadingCatalogue, setIsUploadingCatalogue] = useState(false)
   const [isUploadingManual, setIsUploadingManual] = useState(false)
   const [formData, setFormData] = useState<FormData>({
@@ -157,28 +163,19 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
     const file = e.target.files?.[0]
     if (!file) return
 
-    setIsUploading(true)
+    setIsUploadingCover(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/media', {
-        method: 'POST',
-        body: formData,
+      const result = await uploadFile(file, {
+        onProgress: setCoverImageProgress,
+        onSuccess: (result) => {
+          setFormData(prev => ({ ...prev, coverImageUrl: result.publicUrl }))
+        }
       })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
-      }
-
-      const data = await response.json()
-      setFormData(prev => ({ ...prev, coverImageUrl: data.url }))
-      toast.success('Image uploaded successfully')
     } catch (error) {
       console.error('Error uploading image:', error)
-      toast.error('Failed to upload image')
     } finally {
-      setIsUploading(false)
+      setIsUploadingCover(false)
+      setCoverImageProgress({ loaded: 0, total: 0, percentage: 0 })
     }
   }
 
@@ -192,26 +189,17 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
 
     setIsUploadingCatalogue(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/media', {
-        method: 'POST',
-        body: formData,
+      const result = await uploadFile(file, {
+        onProgress: setCatalogueProgress,
+        onSuccess: (result) => {
+          setFormData(prev => ({ ...prev, catalogueFileUrl: result.publicUrl }))
+        }
       })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
-      }
-
-      const data = await response.json()
-      setFormData(prev => ({ ...prev, catalogueFileUrl: data.url }))
-      toast.success('Catalogue uploaded successfully')
     } catch (error) {
       console.error('Error uploading catalogue:', error)
-      toast.error('Failed to upload catalogue')
     } finally {
       setIsUploadingCatalogue(false)
+      setCatalogueProgress({ loaded: 0, total: 0, percentage: 0 })
     }
   }
 
@@ -221,26 +209,17 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
 
     setIsUploadingManual(true)
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/media', {
-        method: 'POST',
-        body: formData,
+      const result = await uploadFile(file, {
+        onProgress: setManualProgress,
+        onSuccess: (result) => {
+          setFormData(prev => ({ ...prev, userManualFileUrl: result.publicUrl }))
+        }
       })
-
-      if (!response.ok) {
-        throw new Error('Upload failed')
-      }
-
-      const data = await response.json()
-      setFormData(prev => ({ ...prev, userManualFileUrl: data.url }))
-      toast.success('User manual uploaded successfully')
     } catch (error) {
       console.error('Error uploading user manual:', error)
-      toast.error('Failed to upload user manual')
     } finally {
       setIsUploadingManual(false)
+      setManualProgress({ loaded: 0, total: 0, percentage: 0 })
     }
   }
 
@@ -390,12 +369,20 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
                           accept="image/*"
                           className="sr-only"
                           onChange={handleImageUpload}
-                          disabled={isUploading}
+                          disabled={isUploadingCover}
                         />
                       </label>
-                      {isUploading && (
+                      {isUploadingCover && (
                         <div className="mt-2">
-                          <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {coverImageProgress.percentage}%
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div 
+                              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
+                              style={{ width: `${coverImageProgress.percentage}%` }}
+                            ></div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -451,8 +438,16 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
                         />
                       </label>
                       {isUploadingCatalogue && (
-                        <div className="mt-1">
-                          <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                        <div className="mt-1 px-2">
+                          <div className="text-xs text-muted-foreground mb-1 text-center">
+                            {catalogueProgress.percentage}%
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1">
+                            <div 
+                              className="bg-blue-600 h-1 rounded-full transition-all duration-300" 
+                              style={{ width: `${catalogueProgress.percentage}%` }}
+                            ></div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -508,8 +503,16 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
                         />
                       </label>
                       {isUploadingManual && (
-                        <div className="mt-1">
-                          <Loader2 className="h-3 w-3 animate-spin mx-auto" />
+                        <div className="mt-1 px-2">
+                          <div className="text-xs text-muted-foreground mb-1 text-center">
+                            {manualProgress.percentage}%
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1">
+                            <div 
+                              className="bg-blue-600 h-1 rounded-full transition-all duration-300" 
+                              style={{ width: `${manualProgress.percentage}%` }}
+                            ></div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -552,11 +555,11 @@ export default function EditMachineModelPage({ params }: EditMachineModelPagePro
                   type="button"
                   variant="outline"
                   onClick={() => router.push('/dashboard/admin/equipment')}
-                  disabled={isLoading || isUploading || isDeleting}
+                  disabled={isLoading || isUploadingCover || isUploadingCatalogue || isUploadingManual || isDeleting}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isLoading || isUploading || isDeleting}>
+                <Button type="submit" disabled={isLoading || isUploadingCover || isUploadingCatalogue || isUploadingManual || isDeleting}>
                   {isLoading ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>

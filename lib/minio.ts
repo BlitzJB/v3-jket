@@ -14,7 +14,7 @@ export async function ensureBucketExists() {
   const exists = await minioClient.bucketExists(BUCKET_NAME)
   if (!exists) {
     await minioClient.makeBucket(BUCKET_NAME, 'us-east-1')
-    // Make bucket public
+    // Make bucket public for read access
     const policy = {
       Version: '2012-10-17',
       Statement: [
@@ -27,6 +27,24 @@ export async function ensureBucketExists() {
       ]
     }
     await minioClient.setBucketPolicy(BUCKET_NAME, JSON.stringify(policy))
+  }
+}
+
+export async function generatePresignedUploadUrl(fileName: string, contentType: string, expirySeconds: number = 24 * 60 * 60) {
+  await ensureBucketExists()
+  
+  const objectName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
+  
+  const presignedUrl = await minioClient.presignedPutObject(
+    BUCKET_NAME, 
+    objectName, 
+    expirySeconds
+  )
+  
+  return {
+    presignedUrl,
+    objectName,
+    publicUrl: getFileUrl(objectName)
   }
 }
 
