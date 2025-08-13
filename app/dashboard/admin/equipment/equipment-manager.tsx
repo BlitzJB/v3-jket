@@ -248,31 +248,21 @@ export function EquipmentManager({ initialCategories }: EquipmentManagerProps) {
               <div
                 key={category.id}
                 className={cn(
-                  "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-accent/50",
+                  "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-accent/50",
                   selectedCategory?.id === category.id && "bg-accent"
                 )}
                 onClick={() => setSelectedCategory(category)}
               >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <Box className="h-4 w-4 text-primary/60 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{category.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      <span className="font-mono">{category.shortCode}</span> • {category.machineModels.length} models
-                    </div>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
-                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
-                      className="h-8 w-8 p-0 hover:bg-primary/10 flex-shrink-0 ml-1"
+                      className="h-8 w-8 p-0 hover:bg-primary/10 flex-shrink-0"
                     >
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuContent align="start" className="w-48">
                     <DropdownMenuItem
                       className="flex items-center gap-2 text-sm"
                       asChild
@@ -292,6 +282,14 @@ export function EquipmentManager({ initialCategories }: EquipmentManagerProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Box className="h-4 w-4 text-primary/60 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{category.name}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    <span className="font-mono">{category.shortCode}</span> • {category.machineModels.length} models
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
               </div>
             ))}
           </div>

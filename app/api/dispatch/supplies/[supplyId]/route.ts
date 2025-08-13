@@ -21,6 +21,9 @@ export async function GET(
                 },
               },
               return: true,
+              sale: true,
+              warrantyCertificate: true,
+              serviceRequests: true,
             },
           },
           distributor: true,
@@ -31,7 +34,30 @@ export async function GET(
         return new NextResponse("Supply not found", { status: 404 })
       }
 
-      return NextResponse.json(supply)
+      // Check for dependencies that would prevent supply deletion
+      const dependencies = []
+      
+      if (supply.machine.sale) {
+        dependencies.push("sale record")
+      }
+      
+      if (supply.machine.return) {
+        dependencies.push("return record")
+      }
+      
+      if (supply.machine.warrantyCertificate) {
+        dependencies.push("warranty certificate")
+      }
+      
+      if (supply.machine.serviceRequests && supply.machine.serviceRequests.length > 0) {
+        dependencies.push("service requests")
+      }
+
+      return NextResponse.json({
+        ...supply,
+        canDelete: dependencies.length === 0,
+        dependencies
+      })
     } catch (error) {
       console.error("[SUPPLY_GET]", error)
       return new NextResponse("Internal error", { status: 500 })
@@ -165,6 +191,97 @@ export async function PATCH(
       return NextResponse.json(supply)
     } catch (error) {
       console.error("[SUPPLY_PATCH]", error)
+      return new NextResponse("Internal error", { status: 500 })
+    }
+  })
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ supplyId: string }> }
+) {
+  const { supplyId } = await params
+
+  return withPermission('*', async () => {
+    try {
+      // Check if supply exists with all related data
+      const supply = await prisma.supply.findUnique({
+        where: {
+          id: supplyId,
+        },
+        include: {
+          machine: {
+            include: {
+              sale: true,
+              return: true,
+              warrantyCertificate: true,
+              serviceRequests: true,
+            },
+          },
+        },
+      })
+
+      if (!supply) {
+        return new NextResponse("Supply not found", { status: 404 })
+      }
+
+      // Check for dependencies that prevent supply deletion
+      const dependencies = []
+      
+      if (supply.machine.sale) {
+        dependencies.push("sale record")
+      }
+      
+      if (supply.machine.return) {
+        dependencies.push("return record")
+      }
+      
+      if (supply.machine.warrantyCertificate) {
+        dependencies.push("warranty certificate")
+      }
+      
+      if (supply.machine.serviceRequests && supply.machine.serviceRequests.length > 0) {
+        dependencies.push("service requests")
+      }
+
+      if (dependencies.length > 0) {
+        return NextResponse.json(
+          { 
+            canDelete: false, 
+            dependencies,
+            message: `Cannot delete supply. Machine has associated ${dependencies.join(", ")}.`
+          },
+          { status: 400 }
+        )
+      }
+
+      // Use transaction to delete supply and update machine
+      await prisma.$transaction(async (tx) => {
+        // Delete the supply record
+        await tx.supply.delete({
+          where: {
+            id: supplyId,
+          },
+        })
+
+        // Update the machine to remove supply relationship
+        await tx.machine.update({
+          where: {
+            id: supply.machineId,
+          },
+          data: {
+            supplyId: null,
+          },
+        })
+      })
+
+      return NextResponse.json({ 
+        canDelete: true,
+        message: "Supply deleted successfully. Machine returned to inventory." 
+      })
+
+    } catch (error) {
+      console.error("[SUPPLY_DELETE]", error)
       return new NextResponse("Internal error", { status: 500 })
     }
   })

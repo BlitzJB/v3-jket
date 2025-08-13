@@ -1,21 +1,34 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil, File, User, Phone, Mail } from "lucide-react"
+import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil, File, User, Phone, Mail, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 import { generateDispatchCertificateHTML } from "../components/dispatch-certificate"
 import { usePdfGenerator } from "@/hooks/use-pdf-generator"
+import { usePermission } from "@/lib/rbac/client"
 
 interface Supply {
   id: string
@@ -49,6 +62,8 @@ interface Supply {
       customerAddress: string
       distributorInvoiceNumber?: string | null
     } | null
+    warrantyCertificate?: any
+    serviceRequests?: any[]
   }
   distributor: {
     id: string
@@ -56,6 +71,8 @@ interface Supply {
     organizationName: string
     region: string
   }
+  canDelete?: boolean
+  dependencies?: string[]
 }
 
 interface SupplyTableProps {
@@ -64,9 +81,45 @@ interface SupplyTableProps {
 
 export function SupplyTable({ initialSupplies }: SupplyTableProps) {
   const router = useRouter()
-  const [supplies] = useState<Supply[]>(initialSupplies)
+  const [supplies, setSupplies] = useState<Supply[]>(initialSupplies)
   const [search, setSearch] = useState('')
+  const [supplyToDelete, setSupplyToDelete] = useState<Supply | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [supplyDeletionStatus, setSupplyDeletionStatus] = useState<Record<string, { canDelete: boolean, dependencies: string[] }>>({})
   const { generatePdf } = usePdfGenerator()
+  
+  // Check if user is SUPER_ADMIN
+  const isSuperAdmin = usePermission('*')
+
+  // Check deletion status for all supplies (only for SUPER_ADMIN)
+  useEffect(() => {
+    if (!isSuperAdmin) return
+
+    const checkDeletionStatus = async () => {
+      const statusMap: Record<string, { canDelete: boolean, dependencies: string[] }> = {}
+      
+      for (const supply of supplies) {
+        try {
+          const response = await fetch(`/api/dispatch/supplies/${supply.id}`)
+          if (response.ok) {
+            const data = await response.json()
+            statusMap[supply.id] = {
+              canDelete: data.canDelete || false,
+              dependencies: data.dependencies || []
+            }
+          }
+        } catch (error) {
+          console.error('Error checking deletion status:', error)
+          statusMap[supply.id] = { canDelete: false, dependencies: [] }
+        }
+      }
+      
+      setSupplyDeletionStatus(statusMap)
+    }
+    
+    checkDeletionStatus()
+  }, [supplies, isSuperAdmin])
+
   const filteredSupplies = supplies.filter((supply) => {
     const searchLower = search.toLowerCase()
     return (
@@ -84,6 +137,42 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
   // Check if this is a direct-to-customer supply
   const isDirectToCustomer = (supply: Supply) => {
     return supply.distributor.organizationName === "JKET D2C"
+  }
+
+  const handleDeleteSupply = async (supply: Supply) => {
+    if (!isSuperAdmin) {
+      toast.error('You do not have permission to delete supplies')
+      return
+    }
+
+    const status = supplyDeletionStatus[supply.id]
+    if (!status?.canDelete) {
+      toast.error('Cannot delete supply with existing dependencies')
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/dispatch/supplies/${supply.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to delete supply')
+      }
+
+      // Remove supply from local state
+      setSupplies(prev => prev.filter(s => s.id !== supply.id))
+      toast.success('Supply deleted successfully. Machine returned to inventory.')
+      router.refresh()
+    } catch (error) {
+      console.error('Error deleting supply:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete supply')
+    } finally {
+      setIsDeleting(false)
+      setSupplyToDelete(null)
+    }
   }
 
   const handleGenerateDispatchCertificate = async (supply: Supply) => {
@@ -250,43 +339,75 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
     },
     {
       id: 'actions',
-      cell: ({ row }: { row: { original: Supply } }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-primary/10"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => router.push(`/dashboard/dispatch/supplies/${row.original.id}`)}
-              className="cursor-pointer"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              View Details
-            </DropdownMenuItem>
-            {/* Generate Dispatch Certificate */}
-            <DropdownMenuItem
-              onClick={() => handleGenerateDispatchCertificate(row.original)}
-              className="cursor-pointer"
-            >
-              <File className="mr-2 h-4 w-4" />
-              Generate Dispatch Certificate
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => router.push(`/dashboard/dispatch/supplies/${row.original.id}/edit`)}
-              className="cursor-pointer"
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Supply
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+      cell: ({ row }: { row: { original: Supply } }) => {
+        const deletionStatus = supplyDeletionStatus[row.original.id]
+        const canDelete = deletionStatus?.canDelete || false
+        const dependencies = deletionStatus?.dependencies || []
+        
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-primary/10"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={() => router.push(`/dashboard/dispatch/supplies/${row.original.id}`)}
+                className="cursor-pointer"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
+              {/* Generate Dispatch Certificate */}
+              <DropdownMenuItem
+                onClick={() => handleGenerateDispatchCertificate(row.original)}
+                className="cursor-pointer"
+              >
+                <File className="mr-2 h-4 w-4" />
+                Generate Dispatch Certificate
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.push(`/dashboard/dispatch/supplies/${row.original.id}/edit`)}
+                className="cursor-pointer"
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Supply
+              </DropdownMenuItem>
+              {isSuperAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className={`cursor-pointer ${
+                      !canDelete 
+                        ? "opacity-50 cursor-not-allowed text-muted-foreground" 
+                        : "text-destructive focus:text-destructive"
+                    }`}
+                    onClick={() => {
+                      if (canDelete) {
+                        setSupplyToDelete(row.original)
+                      }
+                    }}
+                    disabled={!canDelete}
+                    title={
+                      !canDelete && dependencies.length > 0 
+                        ? `Cannot delete: machine has ${dependencies.join(", ")}` 
+                        : undefined
+                    }
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Supply
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
     },
   ]
 
@@ -310,6 +431,39 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
         data={filteredSupplies}
         pagination
       />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!supplyToDelete} onOpenChange={() => setSupplyToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Supply Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the supply record for machine{" "}
+              <strong>{supplyToDelete?.machine.serialNumber}</strong>?
+              <br />
+              <br />
+              <strong>The machine will NOT be deleted</strong> - it will be returned to inventory for future dispatch.
+              Only the supply record linking this machine to{" "}
+              <strong>{supplyToDelete?.distributor.organizationName}</strong> will be removed.
+              <br />
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => supplyToDelete && handleDeleteSupply(supplyToDelete)}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Supply"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 } 

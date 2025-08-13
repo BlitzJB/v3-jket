@@ -74,6 +74,7 @@ export function QATestForm({ categories }: QATestFormProps) {
   const [serialNumber, setSerialNumber] = useState<string>('')
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [serialNumberError, setSerialNumberError] = useState<string>('')
 
   // Update test configuration when category changes
   useEffect(() => {
@@ -162,7 +163,10 @@ export function QATestForm({ categories }: QATestFormProps) {
       return
     }
 
+    // Clear previous serial number error
+    setSerialNumberError('')
     setIsSubmitting(true)
+
     try {
       const response = await fetch('/api/quality-testing/machines', {
         method: 'POST',
@@ -179,8 +183,22 @@ export function QATestForm({ categories }: QATestFormProps) {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Failed to create machine')
+        const errorText = await response.text()
+        
+        // Handle specific duplicate serial number error
+        if (errorText === 'Serial number already exists') {
+          setSerialNumberError('This serial number already exists in the system')
+          toast.error('Serial number already exists')
+          return
+        }
+        
+        // Handle other errors
+        try {
+          const errorJson = JSON.parse(errorText)
+          throw new Error(errorJson.message || 'Failed to create machine')
+        } catch {
+          throw new Error(errorText || 'Failed to create machine')
+        }
       }
 
       toast.success('Machine test results logged successfully')
@@ -249,7 +267,20 @@ export function QATestForm({ categories }: QATestFormProps) {
             </div>
             <div className="space-y-2">
               <Label>Serial Number</Label>
-              <Input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} />
+              <Input 
+                value={serialNumber} 
+                onChange={(e) => {
+                  setSerialNumber(e.target.value)
+                  // Clear error when user starts typing
+                  if (serialNumberError) {
+                    setSerialNumberError('')
+                  }
+                }}
+                className={serialNumberError ? "border-destructive focus-visible:ring-destructive" : ""}
+              />
+              {serialNumberError && (
+                <p className="text-sm text-destructive">{serialNumberError}</p>
+              )}
             </div>
           </div>
 

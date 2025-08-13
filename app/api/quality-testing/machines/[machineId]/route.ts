@@ -74,7 +74,12 @@ export async function GET(
             include: {
               category: true
             }
-          }
+          },
+          supply: true,
+          sale: true,
+          return: true,
+          warrantyCertificate: true,
+          serviceRequests: true,
         }
       })
 
@@ -82,9 +87,115 @@ export async function GET(
         return new NextResponse("Machine not found", { status: 404 })
       }
 
-      return NextResponse.json(machine)
+      // Check for dependencies that would prevent deletion
+      const dependencies = []
+      
+      if (machine.supply) {
+        dependencies.push("supply record")
+      }
+      
+      if (machine.sale) {
+        dependencies.push("sale record")
+      }
+      
+      if (machine.return) {
+        dependencies.push("return record")
+      }
+      
+      if (machine.warrantyCertificate) {
+        dependencies.push("warranty certificate")
+      }
+      
+      if (machine.serviceRequests && machine.serviceRequests.length > 0) {
+        dependencies.push("service requests")
+      }
+
+      return NextResponse.json({
+        ...machine,
+        canDelete: dependencies.length === 0,
+        dependencies
+      })
     } catch (error) {
       console.error("[MACHINE_GET]", error)
+      return new NextResponse("Internal error", { status: 500 })
+    }
+  })
+}
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ machineId: string }> }
+) {
+  const { machineId } = await params
+
+  return withPermission('*', async () => {
+    try {
+      // Check if machine exists with all relations
+      const machine = await prisma.machine.findUnique({
+        where: {
+          id: machineId,
+        },
+        include: {
+          supply: true,
+          sale: true,
+          return: true,
+          warrantyCertificate: true,
+          serviceRequests: true,
+        },
+      })
+
+      if (!machine) {
+        return new NextResponse("Machine not found", { status: 404 })
+      }
+
+      // Check for dependencies that prevent deletion
+      const dependencies = []
+      
+      if (machine.supply) {
+        dependencies.push("supply record")
+      }
+      
+      if (machine.sale) {
+        dependencies.push("sale record")
+      }
+      
+      if (machine.return) {
+        dependencies.push("return record")
+      }
+      
+      if (machine.warrantyCertificate) {
+        dependencies.push("warranty certificate")
+      }
+      
+      if (machine.serviceRequests && machine.serviceRequests.length > 0) {
+        dependencies.push("service requests")
+      }
+
+      if (dependencies.length > 0) {
+        return NextResponse.json(
+          { 
+            canDelete: false, 
+            dependencies,
+            message: `Cannot delete machine. It has associated ${dependencies.join(", ")}.`
+          },
+          { status: 400 }
+        )
+      }
+
+      // If no dependencies, proceed with deletion
+      await prisma.machine.delete({
+        where: {
+          id: machineId,
+        },
+      })
+
+      return NextResponse.json({ 
+        canDelete: true,
+        message: "Machine deleted successfully" 
+      })
+
+    } catch (error) {
+      console.error("[MACHINE_DELETE]", error)
       return new NextResponse("Internal error", { status: 500 })
     }
   })

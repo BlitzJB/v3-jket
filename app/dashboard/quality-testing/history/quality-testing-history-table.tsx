@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
-import { Search, MoreVertical, Eye, QrCode, Filter, X, Edit } from "lucide-react"
+import { Search, MoreVertical, Eye, QrCode, Filter, X, Edit, Trash2 } from "lucide-react"
 import Image from "next/image"
 import {
     DropdownMenu,
@@ -16,8 +16,20 @@ import {
     DropdownMenuTrigger,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 import QRCode from "qrcode"
 import { PickerDialog } from "../log-test/picker-dialog"
+import { usePermission } from "@/lib/rbac/client"
 
 interface Category {
     id: string
@@ -51,6 +63,8 @@ interface Machine {
             shortCode: string
         }
     }
+    canDelete?: boolean
+    dependencies?: string[]
 }
 
 interface QualityTestingHistoryTableProps {
@@ -60,16 +74,51 @@ interface QualityTestingHistoryTableProps {
 
 export function QualityTestingHistoryTable({ initialMachines, categories }: QualityTestingHistoryTableProps) {
     const router = useRouter()
-    const [machines] = useState(initialMachines)
+    const [machines, setMachines] = useState(initialMachines)
     const [searchQuery, setSearchQuery] = useState("")
     const [qrCodes, setQrCodes] = useState<Record<string, string>>({})
     const [selectedCategory, setSelectedCategory] = useState<string>("")
     const [selectedModel, setSelectedModel] = useState<string>("")
+    const [machineToDelete, setMachineToDelete] = useState<Machine | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [machineDeletionStatus, setMachineDeletionStatus] = useState<Record<string, { canDelete: boolean, dependencies: string[] }>>({})
+    
+    // Check if user is SUPER_ADMIN
+    const isSuperAdmin = usePermission('*')
 
     // Reset model when category changes
     useEffect(() => {
         setSelectedModel("")
     }, [selectedCategory])
+
+    // Check deletion status for all machines (only for SUPER_ADMIN)
+    useEffect(() => {
+        if (!isSuperAdmin) return
+
+        const checkDeletionStatus = async () => {
+            const statusMap: Record<string, { canDelete: boolean, dependencies: string[] }> = {}
+            
+            for (const machine of machines) {
+                try {
+                    const response = await fetch(`/api/quality-testing/machines/${machine.id}`)
+                    if (response.ok) {
+                        const data = await response.json()
+                        statusMap[machine.id] = {
+                            canDelete: data.canDelete || false,
+                            dependencies: data.dependencies || []
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking deletion status:', error)
+                    statusMap[machine.id] = { canDelete: false, dependencies: [] }
+                }
+            }
+            
+            setMachineDeletionStatus(statusMap)
+        }
+        
+        checkDeletionStatus()
+    }, [machines, isSuperAdmin])
 
     // Generate QR codes for all machines on mount
     useEffect(() => {
@@ -118,6 +167,42 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
             total: totalTests,
             passed: passedTests,
             status: passedTests === totalTests ? "success" : "warning"
+        }
+    }
+
+    const handleDeleteMachine = async (machine: Machine) => {
+        if (!isSuperAdmin) {
+            toast.error('You do not have permission to delete machines')
+            return
+        }
+
+        const status = machineDeletionStatus[machine.id]
+        if (!status?.canDelete) {
+            toast.error('Cannot delete machine with existing dependencies')
+            return
+        }
+
+        setIsDeleting(true)
+        try {
+            const response = await fetch(`/api/quality-testing/machines/${machine.id}`, {
+                method: 'DELETE',
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.message || 'Failed to delete machine')
+            }
+
+            // Remove machine from local state
+            setMachines(prev => prev.filter(m => m.id !== machine.id))
+            toast.success('Machine deleted successfully')
+            router.refresh()
+        } catch (error) {
+            console.error('Error deleting machine:', error)
+            toast.error(error instanceof Error ? error.message : 'Failed to delete machine')
+        } finally {
+            setIsDeleting(false)
+            setMachineToDelete(null)
         }
     }
 
@@ -258,42 +343,74 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
         },
         {
             id: "actions",
-            cell: ({ row }: { row: { original: Machine } }) => (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0 hover:bg-primary/10"
-                        >
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem
-                            className="flex items-center gap-2 text-sm"
-                            onClick={() => router.push(`/dashboard/quality-testing/history/${row.original.id}`)}
-                        >
-                            <Eye className="h-4 w-4 text-primary" />
-                            <span>View Details</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            className="flex items-center gap-2 text-sm"
-                            onClick={() => router.push(`/dashboard/quality-testing/edit/${row.original.id}`)}
-                        >
-                            <Edit className="h-4 w-4 text-primary" />
-                            <span>Edit Test Results</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            className="flex items-center gap-2 text-sm"
-                            onClick={() => handlePrintQRCode(row.original.serialNumber)}
-                        >
-                            <QrCode className="h-4 w-4 text-primary" />
-                            <span>Print QR Code</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            ),
+            cell: ({ row }: { row: { original: Machine } }) => {
+                const deletionStatus = machineDeletionStatus[row.original.id]
+                const canDelete = deletionStatus?.canDelete || false
+                const dependencies = deletionStatus?.dependencies || []
+                
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0 hover:bg-primary/10"
+                            >
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                                className="flex items-center gap-2 text-sm"
+                                onClick={() => router.push(`/dashboard/quality-testing/history/${row.original.id}`)}
+                            >
+                                <Eye className="h-4 w-4 text-primary" />
+                                <span>View Details</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="flex items-center gap-2 text-sm"
+                                onClick={() => router.push(`/dashboard/quality-testing/edit/${row.original.id}`)}
+                            >
+                                <Edit className="h-4 w-4 text-primary" />
+                                <span>Edit Test Results</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                className="flex items-center gap-2 text-sm"
+                                onClick={() => handlePrintQRCode(row.original.serialNumber)}
+                            >
+                                <QrCode className="h-4 w-4 text-primary" />
+                                <span>Print QR Code</span>
+                            </DropdownMenuItem>
+                            {isSuperAdmin && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                        className={`flex items-center gap-2 text-sm ${
+                                            !canDelete 
+                                                ? "opacity-50 cursor-not-allowed text-muted-foreground" 
+                                                : "text-destructive focus:text-destructive"
+                                        }`}
+                                        onClick={() => {
+                                            if (canDelete) {
+                                                setMachineToDelete(row.original)
+                                            }
+                                        }}
+                                        disabled={!canDelete}
+                                        title={
+                                            !canDelete && dependencies.length > 0 
+                                                ? `Cannot delete: has ${dependencies.join(", ")}` 
+                                                : undefined
+                                        }
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span>Delete Machine</span>
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )
+            },
         },
     ]
 
@@ -343,6 +460,34 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
                 data={filteredMachines}
                 pagination
             />
+            
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!machineToDelete} onOpenChange={() => setMachineToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Machine</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete machine{" "}
+                            <strong>{machineToDelete?.serialNumber}</strong>?
+                            <br />
+                            <br />
+                            This action cannot be undone. All quality test data for this machine will be permanently removed.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => machineToDelete && handleDeleteMachine(machineToDelete)}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isDeleting ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 } 
