@@ -1,13 +1,13 @@
 import { Client } from 'minio'
 
-const BUCKET_NAME = 'service-attachments'
+const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'service-attachments'
 
 export const minioClient = new Client({
-  endPoint: 'localhost',
-  port: 9090,
-  useSSL: false,
-  accessKey: 'minioadmin',
-  secretKey: 'minioadmin'
+  endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+  port: parseInt(process.env.MINIO_PORT || '9090', 10),
+  useSSL: process.env.MINIO_USE_SSL === 'true',
+  accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+  secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin'
 })
 
 export async function ensureBucketExists() {
@@ -35,11 +35,24 @@ export async function generatePresignedUploadUrl(fileName: string, contentType: 
   
   const objectName = `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
   
-  const presignedUrl = await minioClient.presignedPutObject(
+  let presignedUrl = await minioClient.presignedPutObject(
     BUCKET_NAME, 
     objectName, 
     expirySeconds
   )
+  
+  // If using reverse proxy, rewrite the presigned URL
+  const publicUrl = process.env.MINIO_PUBLIC_URL
+  const publicPath = process.env.MINIO_PUBLIC_PATH || '/media'
+  
+  if (publicUrl) {
+    // Parse the original presigned URL to extract query parameters
+    const originalUrl = new URL(presignedUrl)
+    const queryParams = originalUrl.searchParams
+    
+    // Create new URL with public domain and proxy path
+    presignedUrl = `${publicUrl}${publicPath}/${BUCKET_NAME}/${objectName}?${queryParams.toString()}`
+  }
   
   return {
     presignedUrl,
@@ -60,6 +73,16 @@ export async function uploadFile(file: Buffer, fileName: string, contentType: st
 }
 
 export function getFileUrl(objectName: string) {
+  const publicUrl = process.env.MINIO_PUBLIC_URL
+  const publicPath = process.env.MINIO_PUBLIC_PATH || '/media'
+  const bucketName = process.env.MINIO_BUCKET_NAME || 'service-attachments'
+  
+  if (publicUrl) {
+    // Using reverse proxy - return public URL
+    return `${publicUrl}${publicPath}/${bucketName}/${objectName}`
+  }
+  
+  // Fallback to API route
   return `/api/media/${objectName}`
 }
 

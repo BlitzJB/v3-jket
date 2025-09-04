@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server'
-import { minioClient, ALLOWED_MIME_TYPES } from '@/lib/minio'
+import { minioClient, ALLOWED_MIME_TYPES, generatePresignedUploadUrl } from '@/lib/minio'
 import { dynamic, revalidate } from '../../route-segment-config'
 
 export { dynamic, revalidate }
-
-const BUCKET_NAME = 'service-attachments'
 
 export async function POST(request: Request) {
   try {
@@ -21,22 +19,12 @@ export async function POST(request: Request) {
       return new NextResponse('File name is required', { status: 400 })
     }
 
-    // Generate unique object name
-    const timestamp = Date.now()
-    const objectName = `${timestamp}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`
-
-    // Generate presigned URL for PUT operation (24 hours expiry)
-    const presignedUrl = await minioClient.presignedPutObject(
-      BUCKET_NAME, 
-      objectName, 
-      24 * 60 * 60 // 24 hours
-    )
+    // Use the generatePresignedUploadUrl function from minio.ts
+    const result = await generatePresignedUploadUrl(fileName, fileType)
 
     // Return presigned URL and object info
     return NextResponse.json({
-      presignedUrl,
-      objectName,
-      publicUrl: `/api/media/${objectName}`,
+      ...result,
       expiresIn: 24 * 60 * 60 // 24 hours in seconds
     })
   } catch (error) {

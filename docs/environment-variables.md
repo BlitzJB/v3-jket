@@ -11,6 +11,9 @@ DATABASE_URL="postgresql://username:password@localhost:5432/dbname"
 # NextAuth
 AUTH_SECRET="your-secret-key"
 AUTH_URL="http://localhost:3000"
+
+# Next.js Configuration
+ALLOWED_ORIGINS="localhost:3000,yourdomain.com" # Comma-separated list of allowed origins for server actions
 ```
 
 ## Email Configuration
@@ -44,11 +47,16 @@ For local development, a MinIO container is used for file storage. In production
 
 ```env
 # MinIO
-MINIO_ENDPOINT="localhost"
+MINIO_ENDPOINT="localhost" # Internal MinIO endpoint
 MINIO_PORT="9090"
 MINIO_ACCESS_KEY="minioadmin"
 MINIO_SECRET_KEY="minioadmin"
-MINIO_BUCKET_NAME="uploads"
+MINIO_BUCKET_NAME="service-attachments"
+MINIO_USE_SSL="false" # Set to "true" for production with SSL
+
+# MinIO Reverse Proxy (optional - for production deployments)
+MINIO_PUBLIC_URL="https://yourdomain.com" # Public domain for presigned URLs
+MINIO_PUBLIC_PATH="/media" # Proxy path for MinIO requests
 ```
 
 ## PDF Service Configuration
