@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { WarrantyHelper } from "@/lib/warranty-helper"
 
 export async function GET(
   req: Request,
@@ -53,7 +54,23 @@ export async function GET(
       return new NextResponse("Machine not found", { status: 404 })
     }
 
-    return NextResponse.json(machine)
+    // Add calculated warranty fields
+    const healthScore = WarrantyHelper.getHealthScore(machine)
+    const nextServiceDue = WarrantyHelper.getNextServiceDue(machine)
+    const totalSavings = WarrantyHelper.getTotalSavings(machine)
+    
+    return NextResponse.json({
+      ...machine,
+      // Add calculated fields
+      warrantyInfo: {
+        healthScore,
+        riskLevel: WarrantyHelper.getRiskLevel(healthScore),
+        nextServiceDue,
+        totalSavings,
+        warrantyActive: WarrantyHelper.isWarrantyActive(machine),
+        warrantyExpiry: WarrantyHelper.getWarrantyExpiryDate(machine)
+      }
+    })
   } catch (error) {
     console.error("[MACHINE_GET]", error)
     return new NextResponse("Internal error", { status: 500 })

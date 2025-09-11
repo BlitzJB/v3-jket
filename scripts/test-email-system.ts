@@ -51,7 +51,7 @@ async function testEmailSystem() {
         daysUntilService: 7,
         healthScore: 85,
         totalSavings: 370000,
-        scheduleUrl: 'http://localhost:3000/machines/TEST-001/schedule-warranty?token=test-token'
+        scheduleUrl: 'http://localhost:3000/machines/TEST-001/service-request?source=warranty-reminder'
       }
 
       const html = generateServiceReminderHTML(templateData)
@@ -99,7 +99,7 @@ async function testEmailSystem() {
           daysUntilService: 3,
           healthScore: 75,
           totalSavings: 185000,
-          scheduleUrl: 'http://localhost:3000/machines/IGP-2024-001/schedule-warranty?token=mock-token'
+          scheduleUrl: 'http://localhost:3000/machines/IGP-2024-001/service-request?source=warranty-reminder'
         }
 
         const html = generateServiceReminderHTML(templateData)

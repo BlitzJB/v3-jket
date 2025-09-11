@@ -95,7 +95,7 @@ export function generateServiceReminderHTML(data: ReminderEmailData): string {
       </div>
       
       <p style="margin: 24px 0 0; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
-        This link will expire in 7 days. For assistance, call <strong>1800 202 0051</strong> or email <strong>customer.support@jket.in</strong>
+        For assistance, call <strong>1800 202 0051</strong> or email <strong>customer.support@jket.in</strong>
       </p>
     </div>
   </div>

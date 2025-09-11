@@ -2,7 +2,6 @@ import { prisma } from '@/lib/prisma'
 import { WarrantyHelper } from '../warranty-helper'
 import { generateServiceReminderHTML } from '../email-templates/service-reminder'
 import { transporter, emailConfig } from '@/lib/email/config'
-import { SignJWT } from 'jose'
 import { differenceInDays } from 'date-fns'
 
 export class ReminderService {
@@ -82,21 +81,8 @@ export class ReminderService {
       const healthScore = WarrantyHelper.getHealthScore(machine)
       const totalSavings = WarrantyHelper.getTotalSavings(machine)
       
-      // Generate JWT token for scheduling link
-      const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || 'development-jwt-secret-32-characters'
-      )
-      
-      const token = await new SignJWT({
-        machineId: machine.id,
-        serialNumber: machine.serialNumber,
-      })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setExpirationTime('7d')
-        .setIssuedAt()
-        .sign(secret)
-      
-      const scheduleUrl = `${process.env.NEXT_PUBLIC_APP_URL}/machines/${machine.serialNumber}/schedule-warranty?token=${token}`
+      // Generate direct link to service request page
+      const scheduleUrl = `${process.env.NEXT_PUBLIC_APP_URL}/machines/${machine.serialNumber}/service-request?source=warranty-reminder`
       
       // Generate email HTML
       const html = generateServiceReminderHTML({
@@ -178,21 +164,8 @@ export class ReminderService {
       const healthScore = WarrantyHelper.getHealthScore(machine)
       const totalSavings = WarrantyHelper.getTotalSavings(machine)
 
-      // Generate JWT token
-      const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || 'development-jwt-secret-32-characters'
-      )
-
-      const token = await new SignJWT({
-        machineId: machine.id,
-        serialNumber: machine.serialNumber,
-      })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setExpirationTime('7d')
-        .setIssuedAt()
-        .sign(secret)
-
-      const scheduleUrl = `${process.env.NEXT_PUBLIC_APP_URL}/machines/${machine.serialNumber}/schedule-warranty?token=${token}`
+      // Generate direct link to service request page
+      const scheduleUrl = `${process.env.NEXT_PUBLIC_APP_URL}/machines/${machine.serialNumber}/service-request?source=warranty-reminder`
 
       // Generate email HTML
       const html = generateServiceReminderHTML({
