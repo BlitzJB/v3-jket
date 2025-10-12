@@ -100,7 +100,7 @@ export default function EditUserPage({
   })
 
   // Fetch user data
-  const { isLoading: isLoadingUser, error: userError } = useQuery({
+  const { data: user, isLoading: isLoadingUser, error: userError } = useQuery({
     queryKey: ['user', userId],
     queryFn: () => fetchUser(userId),
     retry: 1,
@@ -109,7 +109,6 @@ export default function EditUserPage({
 
   // Set form data when user data is fetched
   React.useEffect(() => {
-    const user = queryClient.getQueryData<User>(['user', userId])
     if (user) {
       setFormData({
         name: user.name || '',
@@ -120,7 +119,7 @@ export default function EditUserPage({
         organizationName: user.organizationName || '',
       })
     }
-  }, [userId, queryClient])
+  }, [user])
 
   // Update user mutation
   const { mutate: updateUserMutation, isPending: isUpdating } = useMutation({
