@@ -8,7 +8,7 @@ import { z } from 'zod'
 const updateUserSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
-  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'QUALITY_TESTING', 'DISPATCH_MANAGER', 'MANUFACTURER', 'DISTRIBUTOR', 'SERVICE_ENGINEER', 'CUSTOMER_SERVICE', 'USER', 'GUEST']),
+  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'QUALITY_TESTING', 'DISPATCH_MANAGER', 'MANUFACTURER', 'DISTRIBUTOR', 'SERVICE_ENGINEER', 'CUSTOMER_SERVICE', 'SALES', 'USER', 'GUEST']),
   phoneNumber: z.string().optional(),
   region: z.string().optional(),
   organizationName: z.string().optional(),
