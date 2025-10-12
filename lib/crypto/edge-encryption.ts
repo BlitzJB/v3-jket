@@ -1,6 +1,6 @@
 /**
  * Edge-safe encryption utilities using Web Crypto API
- * Compatible with Next.js Edge Runtime
+ * Compatible with Next.js Edge Runtime and Node.js
  */
 
 const ALGORITHM = 'AES-GCM'
@@ -15,31 +15,69 @@ function getEncryptionKey(): string {
   if (!key) {
     throw new Error('ENCRYPTION_KEY environment variable is not set')
   }
+
+  // Validate base64 format and length
+  try {
+    const decoded = base64ToArrayBuffer(key)
+    if (decoded.byteLength !== 32) {
+      throw new Error('ENCRYPTION_KEY must be exactly 32 bytes when decoded')
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('32 bytes')) {
+      throw error
+    }
+    throw new Error('ENCRYPTION_KEY must be a valid base64-encoded 32-byte value')
+  }
+
   return key
 }
 
 /**
  * Convert base64 string to ArrayBuffer
+ * Uses atob for browsers/Edge Runtime, Buffer for Node.js
  */
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binaryString = atob(base64)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
+  // Try browser/Edge Runtime atob first
+  if (typeof atob !== 'undefined') {
+    const binaryString = atob(base64)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    return bytes.buffer
   }
-  return bytes.buffer
+
+  // Fallback to Node.js Buffer
+  if (typeof Buffer !== 'undefined') {
+    const buffer = Buffer.from(base64, 'base64')
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+  }
+
+  throw new Error('No base64 decoding method available')
 }
 
 /**
  * Convert ArrayBuffer to base64 string
+ * Uses btoa for browsers/Edge Runtime, Buffer for Node.js
  */
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
-  let binary = ''
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i])
+
+  // Try browser/Edge Runtime btoa first
+  if (typeof btoa !== 'undefined') {
+    let binary = ''
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i])
+    }
+    return btoa(binary)
   }
-  return btoa(binary)
+
+  // Fallback to Node.js Buffer
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(bytes).toString('base64')
+  }
+
+  throw new Error('No base64 encoding method available')
 }
 
 /**

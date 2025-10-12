@@ -16,22 +16,17 @@ export async function PATCH(
     const { userId } = await params
     const { approved } = await req.json()
 
-    // Get user with encrypted password before updating
-    const userBeforeUpdate = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        encryptedTemporaryPassword: true,
-        name: true,
-        email: true,
-      },
-    })
-
+    // Use atomic update to prevent race conditions
+    // Only update if not already approved (when approving)
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: {
+        id: userId,
+        ...(approved && { approved: false }), // Only update if not already approved
+      },
       data: {
         approved,
         // Clear the temporary password after approval
-        encryptedTemporaryPassword: approved ? null : undefined,
+        ...(approved && { encryptedTemporaryPassword: null }),
       },
       select: {
         id: true,
@@ -42,18 +37,27 @@ export async function PATCH(
         phoneNumber: true,
         region: true,
         organizationName: true,
+        encryptedTemporaryPassword: true, // Get encrypted password in the same query
       },
     })
 
     // Send welcome email if user is being approved and has encrypted password
-    if (approved && userBeforeUpdate?.encryptedTemporaryPassword) {
+    if (approved && user.encryptedTemporaryPassword) {
+      // Validate required fields exist before attempting to send email
+      if (!user.email || !user.name) {
+        console.error('Cannot send welcome email: missing user email or name')
+        // Return success but skip email
+        const { encryptedTemporaryPassword, ...userWithoutPassword } = user
+        return Response.json(userWithoutPassword)
+      }
+
       try {
-        const decryptedPassword = await decryptPassword(userBeforeUpdate.encryptedTemporaryPassword)
+        const decryptedPassword = await decryptPassword(user.encryptedTemporaryPassword)
         const loginUrl = 'https://care.jket.in/auth/login'
         const emailHtml = await render(
           createElement(WelcomeEmail, {
-            name: userBeforeUpdate.name || 'User',
-            email: userBeforeUpdate.email || '',
+            name: user.name,
+            email: user.email,
             password: decryptedPassword,
             loginUrl: loginUrl,
           })
@@ -61,16 +65,18 @@ export async function PATCH(
 
         await transporter.sendMail({
           from: emailConfig.from,
-          to: userBeforeUpdate.email || '',
+          to: user.email,
           subject: 'Welcome to JKET Prime Care - Your Login Credentials',
           html: emailHtml,
         })
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError)
-        // Don't fail the request if email sending fails
+      } catch (error) {
+        console.error('Failed to decrypt password or send welcome email:', error)
+        // Don't fail the request if decryption or email sending fails
       }
     }
 
-    return Response.json(user)
+    // Remove encryptedTemporaryPassword from response
+    const { encryptedTemporaryPassword, ...userWithoutPassword } = user
+    return Response.json(userWithoutPassword)
   })
 } 
