@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   History,
+  LineChart,
 } from "lucide-react"
 
 // Navigation items for the service dashboard
@@ -21,6 +22,11 @@ const serviceNavItems = [
     title: "Service History",
     href: "/dashboard/service/history",
     icon: <History className="h-4 w-4" />,
+  },
+  {
+    title: "Analytics",
+    href: "/dashboard/service/analytics",
+    icon: <LineChart className="h-4 w-4" />,
   },
 ]
 
