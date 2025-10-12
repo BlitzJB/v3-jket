@@ -126,7 +126,7 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
             const codes: Record<string, string> = {}
             for (const machine of machines) {
                 try {
-                    const qrCodeURL = `https://care.jket.in/machine/${machine.serialNumber}`
+                    const qrCodeURL = `https://jkprimecare.com/machine/${machine.serialNumber}`
                     const qrCodeSVG = await QRCode.toString(qrCodeURL, {
                         type: 'svg',
                         margin: 1,
@@ -208,7 +208,7 @@ export function QualityTestingHistoryTable({ initialMachines, categories }: Qual
 
     const handlePrintQRCode = async (serialNumber: string) => {
         try {
-            const qrCodeURL = `https://care.jket.in/machine/${serialNumber}`
+            const qrCodeURL = `https://jkprimecare.com/machine/${serialNumber}`
             const qrCodeSVG = await QRCode.toString(qrCodeURL, {
                 type: 'svg',
                 margin: 2,

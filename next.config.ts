@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'care.jket.in',
+        hostname: 'jkprimecare.com',
       },
       // allow any image from the internet
       {

@@ -17,7 +17,7 @@ export default function ScanPage() {
     if (result?.text) {
       try {
         setIsScanning(false)
-        // Extract serial number from URL like "https://care.jket.in/machine/TC-TM-18-01-2025-0002"
+        // Extract serial number from URL like "https://jkprimecare.com/machine/TC-TM-18-01-2025-0002"
         const url = new URL(result.text)
         const serialNumber = url.pathname.split('/').pop()
         

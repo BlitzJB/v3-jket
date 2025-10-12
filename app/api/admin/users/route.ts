@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       // Send welcome email only if auto-approved (created by SUPER_ADMIN)
       if (isSuperAdmin) {
         try {
-          const loginUrl = 'https://care.jket.in/auth/login'
+          const loginUrl = 'https://jkprimecare.com/auth/login'
           const emailHtml = await render(
             createElement(WelcomeEmail, {
               name: body.name,

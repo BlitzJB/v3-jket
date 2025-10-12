@@ -53,7 +53,7 @@ export async function PATCH(
 
       try {
         const decryptedPassword = await decryptPassword(user.encryptedTemporaryPassword)
-        const loginUrl = 'https://care.jket.in/auth/login'
+        const loginUrl = 'https://jkprimecare.com/auth/login'
         const emailHtml = await render(
           createElement(WelcomeEmail, {
             name: user.name,

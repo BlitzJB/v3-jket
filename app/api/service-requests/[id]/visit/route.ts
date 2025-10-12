@@ -70,7 +70,7 @@ export async function POST(
     // Send email notification to the engineer
     try {
       const formattedDate = format(new Date(serviceVisitDate), "PPP");
-      const serviceVisitUrl = `https://care.jket.in/dashboard/service/visits/${visit.id}`
+      const serviceVisitUrl = `https://jkprimecare.com/dashboard/service/visits/${visit.id}`
       
       const emailHtml = await render(
         createElement(ServiceEngineerAssignedEmail, {

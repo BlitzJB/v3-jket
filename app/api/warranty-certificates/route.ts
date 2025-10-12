@@ -70,8 +70,8 @@ export async function POST(request: Request) {
             warrantyPeriodMonths: machine.machineModel.warrantyPeriodMonths,
             warrantyEndDate: format(warrantyEndDate, 'PPP'),
             machineUrl: machineUrl,
-            catalogueFileUrl: machine.machineModel.catalogueFileUrl?.replace('http://', 'https://').replace('://', '://care.jket.in') || undefined,
-            userManualFileUrl: machine.machineModel.userManualFileUrl?.replace('http://', 'https://').replace('://', '://care.jket.in') || undefined,
+            catalogueFileUrl: machine.machineModel.catalogueFileUrl?.replace('http://', 'https://').replace('://', '://jkprimecare.com') || undefined,
+            userManualFileUrl: machine.machineModel.userManualFileUrl?.replace('http://', 'https://').replace('://', '://jkprimecare.com') || undefined,
           })
         )
 

@@ -50,8 +50,8 @@ export async function POST(
           const { serviceRequest } = serviceVisit;
           const machine = serviceRequest.machine;
           
-          // Convert URLs to use care.jket.in domain for production
-          const serviceRequestUrl = `https://care.jket.in/dashboard/customer-service/requests/${serviceRequest.id}`;
+          // Convert URLs to use jkprimecare.com domain for production
+          const serviceRequestUrl = `https://jkprimecare.com/dashboard/customer-service/requests/${serviceRequest.id}`;
           
           // Create and render the email
           const emailHtml = await render(
