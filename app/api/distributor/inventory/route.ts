@@ -34,9 +34,6 @@ export async function GET() {
       },
     })
 
-    // Filter out machines where supply is null
-    const validMachines = machines.filter((machine) => machine.supply !== null)
-
-    return Response.json(validMachines)
+    return Response.json(machines)
   })
 }

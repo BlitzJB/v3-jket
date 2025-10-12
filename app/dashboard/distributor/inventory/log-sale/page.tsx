@@ -13,7 +13,7 @@ import { format } from "date-fns"
 interface Machine {
   id: string
   serialNumber: string
-  manufacturingDate: Date
+  manufacturingDate: string
   machineModel: {
     id: string
     name: string
@@ -24,8 +24,8 @@ interface Machine {
   }
   supply: {
     id: string
-    supplyDate: Date
-    sellBy: Date
+    supplyDate: string
+    sellBy: string
   }
 }
 
