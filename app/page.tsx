@@ -44,7 +44,7 @@ export default function LandingPage() {
           <div className="mt-10 flex items-center justify-center gap-6">
             <Link href="/auth/login">
               <Button size="lg" className="gap-2">
-                Employee Login
+                Authorised Personnel Login
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
