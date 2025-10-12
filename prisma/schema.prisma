@@ -146,15 +146,16 @@ model Sale {
 }
 
 model ServiceRequest {
-  id             String        @id @default(cuid())
-  machineId      String
-  machine        Machine       @relation(fields: [machineId], references: [id])
-  serviceVisitId String?       @unique
-  serviceVisit   ServiceVisit?
-  complaint      String?
-  attachments    Json?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  ticketFriendlyId  String        @unique
+  machineId         String
+  machine           Machine       @relation(fields: [machineId], references: [id])
+  serviceVisitId    String?       @unique
+  serviceVisit      ServiceVisit?
+  complaint         String?
+  attachments       Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 enum ServiceRequestStatus {

@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { generateTicketFriendlyId } from "@/lib/ticket-generator"
 
 export async function POST(req: Request) {
   try {
@@ -23,9 +24,13 @@ export async function POST(req: Request) {
       )
     }
 
+    // Generate ticket friendly ID
+    const ticketFriendlyId = await generateTicketFriendlyId()
+
     // Create service request
     const serviceRequest = await prisma.serviceRequest.create({
       data: {
+        ticketFriendlyId,
         machineId,
         complaint,
         attachments: attachments || [],

@@ -18,6 +18,7 @@ import { CreateVisitDialog } from "./create-visit-dialog"
 
 interface ServiceRequest {
   id: string
+  ticketFriendlyId: string
   complaint: string | null
   createdAt: Date
   machine: {
@@ -69,6 +70,7 @@ export function RequestsTable({ initialRequests }: RequestsTableProps) {
   const filteredRequests = requests.filter((request) => {
     const searchLower = search.toLowerCase()
     return (
+      request.ticketFriendlyId.toLowerCase().includes(searchLower) ||
       request.machine.serialNumber.toLowerCase().includes(searchLower) ||
       request.machine.machineModel.name.toLowerCase().includes(searchLower) ||
       request.complaint?.toLowerCase().includes(searchLower) ||
@@ -79,6 +81,15 @@ export function RequestsTable({ initialRequests }: RequestsTableProps) {
   })
 
   const columns = [
+    {
+      accessorKey: 'ticketId',
+      header: 'Ticket ID',
+      cell: ({ row }: { row: { original: ServiceRequest } }) => (
+        <div className="font-mono font-medium">
+          {row.original.ticketFriendlyId}
+        </div>
+      ),
+    },
     {
       accessorKey: 'machine',
       header: 'Machine',

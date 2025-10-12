@@ -11,6 +11,7 @@ import { ServiceRequestStatus } from "@prisma/client"
 
 interface ServiceRequest {
   id: string
+  ticketFriendlyId: string
   complaint: string | null
   createdAt: Date
   updatedAt: Date
@@ -74,6 +75,7 @@ export function HistoryTable({ requests }: HistoryTableProps) {
 
     return data.filter((request) => {
       const searchableFields = [
+        request.ticketFriendlyId,
         request.machine.serialNumber,
         request.machine.machineModel.name,
         request.machine.warrantyCertificate?.name,
@@ -96,6 +98,15 @@ export function HistoryTable({ requests }: HistoryTableProps) {
   const filteredData = filterData(requests, globalFilter)
 
   const columns = [
+    {
+      accessorKey: "ticketId",
+      header: "Ticket ID",
+      cell: ({ row }: any) => (
+        <div className="font-mono font-medium">
+          {row.original.ticketFriendlyId}
+        </div>
+      ),
+    },
     {
       accessorKey: "machine.serialNumber",
       header: "Serial Number",

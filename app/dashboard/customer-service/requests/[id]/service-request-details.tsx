@@ -100,6 +100,7 @@ interface ServiceVisit {
 
 interface ServiceRequest {
   id: string
+  ticketFriendlyId: string
   complaint: string
   serviceVisit: ServiceVisit | null
   machine: {
@@ -586,6 +587,10 @@ export function ServiceRequestDetails({ request }: ServiceRequestDetailsProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div>
+                  <div className="text-sm text-muted-foreground">Ticket ID</div>
+                  <div className="font-mono font-medium">{request.ticketFriendlyId}</div>
+                </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Complaint</div>
                   <div className="font-medium">{request.complaint}</div>
