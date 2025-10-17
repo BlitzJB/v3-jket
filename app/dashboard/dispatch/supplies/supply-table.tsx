@@ -87,13 +87,13 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [supplyDeletionStatus, setSupplyDeletionStatus] = useState<Record<string, { canDelete: boolean, dependencies: string[] }>>({})
   const { generatePdf } = usePdfGenerator()
-  
-  // Check if user is SUPER_ADMIN
-  const isSuperAdmin = usePermission('*')
 
-  // Check deletion status for all supplies (only for SUPER_ADMIN)
+  // Check if user has dispatch:manage permission (ADMIN or DISPATCH_MANAGER)
+  const canManageDispatch = usePermission('dispatch:manage')
+
+  // Check deletion status for all supplies (only for users with dispatch:manage permission)
   useEffect(() => {
-    if (!isSuperAdmin) return
+    if (!canManageDispatch) return
 
     const checkDeletionStatus = async () => {
       const statusMap: Record<string, { canDelete: boolean, dependencies: string[] }> = {}
@@ -118,7 +118,7 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
     }
     
     checkDeletionStatus()
-  }, [supplies, isSuperAdmin])
+  }, [supplies, canManageDispatch])
 
   const filteredSupplies = supplies.filter((supply) => {
     const searchLower = search.toLowerCase()
@@ -140,7 +140,7 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
   }
 
   const handleDeleteSupply = async (supply: Supply) => {
-    if (!isSuperAdmin) {
+    if (!canManageDispatch) {
       toast.error('You do not have permission to delete supplies')
       return
     }
@@ -378,7 +378,7 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit Supply
               </DropdownMenuItem>
-              {isSuperAdmin && (
+              {canManageDispatch && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
