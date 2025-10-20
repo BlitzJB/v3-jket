@@ -79,6 +79,7 @@ export class WarrantyHelper {
   /**
    * Get the next service due date for a machine
    * Calculates based on SERVICE_INTERVAL_MONTHS from sale date
+   * Returns overdue services (if any) or the next upcoming service
    * @param machine - Machine to calculate for
    * @returns Date of next service due, or null if warranty expired or no sale
    */
@@ -96,39 +97,27 @@ export class WarrantyHelper {
       ? new Date(machine.sale.saleDate)
       : machine.sale.saleDate
     const warrantyExpiry = this.getWarrantyExpiryDate(machine)
-    const today = new Date()
+    const today = startOfDay(new Date())
 
     // Generate all service due dates from sale date until warranty expiry
     let currentServiceDate = addMonths(saleDate, this.SERVICE_INTERVAL_MONTHS)
-    let nextServiceDue: Date | null = null
+    let lastOverdueService: Date | null = null
+    let nextFutureService: Date | null = null
 
     while (warrantyExpiry && currentServiceDate <= warrantyExpiry) {
-      // Find the first service date that is today or in the future
-      if (currentServiceDate >= startOfDay(today)) {
-        nextServiceDue = currentServiceDate
+      if (currentServiceDate < today) {
+        // This is an overdue service - keep track of the most recent one
+        lastOverdueService = currentServiceDate
+      } else {
+        // This is a future service - save the first one and break
+        nextFutureService = currentServiceDate
         break
       }
       currentServiceDate = addMonths(currentServiceDate, this.SERVICE_INTERVAL_MONTHS)
     }
 
-    // If no future service date found but we're still in warranty,
-    // check if there's an overdue service
-    if (!nextServiceDue) {
-      currentServiceDate = addMonths(saleDate, this.SERVICE_INTERVAL_MONTHS)
-      let lastServiceDue: Date | null = null
-
-      while (warrantyExpiry && currentServiceDate <= warrantyExpiry) {
-        if (currentServiceDate < today) {
-          lastServiceDue = currentServiceDate
-        }
-        currentServiceDate = addMonths(currentServiceDate, this.SERVICE_INTERVAL_MONTHS)
-      }
-
-      // Return the most recent overdue service
-      return lastServiceDue
-    }
-
-    return nextServiceDue
+    // Priority: return overdue service if exists, otherwise return next future service
+    return lastOverdueService || nextFutureService
   }
 
   /**
