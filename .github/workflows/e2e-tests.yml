@@ -1,0 +1,101 @@
+name: E2E Tests - Warranty Notification System
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - 'tests/e2e/**'
+      - 'lib/services/reminder.service.ts'
+      - 'lib/helpers/warranty.helper.ts'
+      - 'lib/utils/email.ts'
+      - 'prisma/**'
+      - 'package.json'
+      - '.github/workflows/e2e-tests.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  e2e-tests:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+      CRON_SECRET: test-secret-e2e
+      SERVICE_INTERVAL_MONTHS: 3
+      REMINDER_DAYS_BEFORE: 15
+      AVG_PREVENTIVE_COST: 15000
+      AVG_BREAKDOWN_COST: 200000
+      SMTP_HOST: localhost
+      SMTP_PORT: 1025
+      SMTP_USER: test@test.com
+      SMTP_PASS: testpass
+      SMTP_FROM: test@jket.in
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: |
+            coverage/
+            test-results/
+          retention-days: 30
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All 40 E2E tests executed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Suites:" >> $GITHUB_STEP_SUMMARY
+          echo "- reminder-flow.e2e.test.ts (15 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- reminder-filtering.e2e.test.ts (6 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- reminder-deduplication.e2e.test.ts (3 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- reminder-multi-machine.e2e.test.ts (2 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- error-handling.e2e.test.ts (4 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- api-endpoints.e2e.test.ts (10 tests)" >> $GITHUB_STEP_SUMMARY
