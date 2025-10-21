@@ -11,8 +11,9 @@ This directory contains comprehensive end-to-end tests for the warranty reminder
 - **Deduplication** (3 tests): Prevent same-day duplicates, handle concurrent executions
 - **Multi-Machine Processing** (2 tests): Batch processing, large batch performance
 - **Error Handling** (4 tests): Email failures, graceful degradation, data integrity
+- **API Endpoints** (10 tests): Action log creation, validation, querying, integration with ReminderService
 
-**Total: 30 E2E test scenarios**
+**Total: 40 E2E test scenarios**
 
 ## Prerequisites
 
@@ -96,7 +97,8 @@ tests/e2e/
 │   ├── reminder-filtering.e2e.test.ts       # Filtering logic tests
 │   ├── reminder-deduplication.e2e.test.ts   # Deduplication tests
 │   ├── reminder-multi-machine.e2e.test.ts   # Multi-machine tests
-│   └── error-handling.e2e.test.ts           # Error handling tests
+│   ├── error-handling.e2e.test.ts           # Error handling tests
+│   └── api-endpoints.e2e.test.ts            # API endpoint tests
 └── jest.config.e2e.js       # Jest E2E configuration
 ```
 
@@ -258,7 +260,7 @@ jobs:
 
 ## Performance
 
-- Test execution time: ~5-10 seconds for all 30 tests
+- Test execution time: ~5-15 seconds for all 40 tests
 - Database cleanup: ~100ms per test
 - Email capture: No overhead (in-memory)
 
