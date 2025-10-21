@@ -48,8 +48,6 @@ export class MachineFactory {
         customerEmail: overrides.customerEmail || `customer-${Date.now()}@test.com`,
         customerPhoneNumber: overrides.customerPhoneNumber || '1234567890',
         customerAddress: overrides.customerAddress || 'Test Address',
-        reminderOptOut: overrides.reminderOptOut ?? false,
-        whatsappNumber: overrides.whatsappNumber || '1234567890',
         customerContactPersonName: overrides.customerContactPersonName || 'Test Contact',
         ...overrides
       }

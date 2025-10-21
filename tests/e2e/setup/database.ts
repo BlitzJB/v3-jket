@@ -50,7 +50,6 @@ export class TestDatabase {
     try {
       // Delete in correct order to respect foreign key constraints
       await this.prisma.$transaction([
-        this.prisma.actionLog.deleteMany(),
         this.prisma.serviceVisit.deleteMany(),
         this.prisma.serviceRequest.deleteMany(),
         this.prisma.sale.deleteMany(),

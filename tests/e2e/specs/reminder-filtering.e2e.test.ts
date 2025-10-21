@@ -5,10 +5,12 @@ import { ReminderService } from '@/lib/services/reminder.service'
 
 // Mock email before importing
 const emailCapture = new EmailCapture()
-const mockTransport = emailCapture.setup()
+let mockTransport: any
 
 jest.mock('@/lib/email/config', () => ({
-  transporter: mockTransport,
+  get transporter() {
+    return mockTransport
+  },
   emailConfig: {
     from: 'test@jket.in'
   }
@@ -19,6 +21,7 @@ describe('E2E: Reminder Filtering and Skip Logic', () => {
   let factory: MachineFactory
 
   beforeAll(async () => {
+    mockTransport = emailCapture.setup()
     testDb = new TestDatabase()
     await testDb.start()
     factory = new MachineFactory(testDb.getPrisma())
