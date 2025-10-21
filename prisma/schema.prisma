@@ -105,6 +105,7 @@ model Machine {
   sale                Sale?
   serviceRequests     ServiceRequest[]
   warrantyCertificate WarrantyCertificate?
+  actionLogs          ActionLog[]
 }
 
 model Supply {
@@ -141,6 +142,7 @@ model Sale {
   customerPhoneNumber     String
   customerAddress         String
   distributorInvoiceNumber String?
+  reminderOptOut          Boolean  @default(false)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
@@ -203,4 +205,18 @@ model WarrantyCertificate {
   country String @default("India")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+model ActionLog {
+  id         String   @id @default(cuid())
+  machineId  String
+  machine    Machine  @relation(fields: [machineId], references: [id])
+  actionType String   // REMINDER_SENT, SERVICE_SCHEDULED, WARRANTY_VIEWED, EMAIL_OPENED, LINK_CLICKED
+  channel    String   @default("SYSTEM") // EMAIL, WHATSAPP, WEB, SMS, SYSTEM
+  metadata   Json?    // Flexible data storage for additional information
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([machineId])
+  @@index([actionType])
+  @@index([createdAt])
 }

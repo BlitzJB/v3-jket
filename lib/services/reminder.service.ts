@@ -27,7 +27,7 @@ export class ReminderService {
       })
 
       // Filter machines that have valid email and haven't opted out
-      const machines = allMachines.filter(machine => 
+      const machines = allMachines.filter(machine =>
         machine.sale &&
         machine.sale.customerEmail &&
         machine.sale.customerEmail.trim() !== '' &&
