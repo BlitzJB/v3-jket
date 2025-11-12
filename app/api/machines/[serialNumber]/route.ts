@@ -55,9 +55,9 @@ export async function GET(
     }
 
     // Add calculated warranty fields
-    const healthScore = WarrantyHelper.getHealthScore(machine)
-    const nextServiceDue = WarrantyHelper.getNextServiceDue(machine)
-    const totalSavings = WarrantyHelper.getTotalSavings(machine)
+    const healthScore = WarrantyHelper.getHealthScore(machine as any)
+    const nextServiceDue = WarrantyHelper.getNextServiceDue(machine as any)
+    const totalSavings = WarrantyHelper.getTotalSavings(machine as any)
     
     return NextResponse.json({
       ...machine,
@@ -67,8 +67,8 @@ export async function GET(
         riskLevel: WarrantyHelper.getRiskLevel(healthScore),
         nextServiceDue,
         totalSavings,
-        warrantyActive: WarrantyHelper.isWarrantyActive(machine),
-        warrantyExpiry: WarrantyHelper.getWarrantyExpiryDate(machine)
+        warrantyActive: WarrantyHelper.isWarrantyActive(machine as any),
+        warrantyExpiry: WarrantyHelper.getWarrantyExpiryDate(machine as any)
       }
     })
   } catch (error) {

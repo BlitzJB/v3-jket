@@ -51,6 +51,8 @@ async function testEmailSystem() {
         daysUntilService: 7,
         healthScore: 85,
         totalSavings: 370000,
+        warrantyActive: true,
+        warrantyExpiryDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), // 180 days from now
         scheduleUrl: 'http://localhost:3000/machines/TEST-001/service-request?source=warranty-reminder'
       }
 
@@ -99,6 +101,8 @@ async function testEmailSystem() {
           daysUntilService: 3,
           healthScore: 75,
           totalSavings: 185000,
+          warrantyActive: false, // Expired for this test
+          warrantyExpiryDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
           scheduleUrl: 'http://localhost:3000/machines/IGP-2024-001/service-request?source=warranty-reminder'
         }
 
@@ -183,6 +187,10 @@ async function testEmailSystem() {
           daysUntilService: test.days,
           healthScore: test.days < 0 ? 30 : 80,
           totalSavings: 150000,
+          warrantyActive: test.days < -30 ? false : true, // Expired if more than 30 days overdue
+          warrantyExpiryDate: test.days < 0 
+            ? new Date(Date.now() - Math.abs(test.days) * 24 * 60 * 60 * 1000) 
+            : new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
           scheduleUrl: 'http://localhost:3000/test'
         }
 

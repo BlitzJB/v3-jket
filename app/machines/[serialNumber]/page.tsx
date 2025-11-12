@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import { format, addMonths, isBefore, formatDistanceToNow } from 'date-fns'
-import { ArrowLeft, Box, Calendar, FileText, Building2, Phone, MapPin, FileWarning, Printer, Clock, ShieldCheck, Loader2, Eye, Download } from 'lucide-react'
+import { ArrowLeft, Box, Calendar, FileText, Building2, Phone, MapPin, FileWarning, Printer, Clock, ShieldCheck, Loader2, Eye, Download, Heart, AlertCircle, IndianRupee, CalendarIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePdfGenerator } from '@/hooks/use-pdf-generator'
 import { Input } from '@/components/ui/input'
@@ -57,6 +57,13 @@ interface Machine {
     state: string
     zipCode: string
     country: string
+  }
+  warrantyInfo?: {
+    healthScore: number
+    riskLevel: string
+    nextServiceDue: string
+    totalSavings: number
+    warrantyActive: boolean
   }
   serviceRequests: Array<{
     id: string
@@ -306,6 +313,65 @@ export default function MachinePage({ params }: { params: Promise<{ serialNumber
             )}
           </div>
         </div>
+
+        {/* Warranty Info Card */}
+        {machine.warrantyInfo && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Maintenance Status</CardTitle>
+              <CardDescription>Keep your machine running at peak performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Heart className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="text-sm text-muted-foreground">Health Score</div>
+                  <div className={`text-2xl font-bold ${
+                    machine.warrantyInfo.healthScore >= 80 ? 'text-green-500' :
+                    machine.warrantyInfo.healthScore >= 60 ? 'text-yellow-500' : 
+                    'text-red-500'
+                  }`}>
+                    {Math.round(machine.warrantyInfo.healthScore)}/100
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="text-sm text-muted-foreground">Next Service</div>
+                  <div className="font-medium">
+                    {machine.warrantyInfo.nextServiceDue 
+                      ? format(new Date(machine.warrantyInfo.nextServiceDue), 'PP')
+                      : 'Not scheduled'}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <IndianRupee className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Savings</div>
+                  <div className="font-medium text-green-600">
+                    ₹{machine.warrantyInfo.totalSavings.toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Add Schedule Service button if warranty is active */}
+              {machine.warrantyInfo.warrantyActive && (
+                <div className="mt-4">
+                  <Link href={`/machines/${machine.serialNumber}/service-request`}>
+                    <Button variant="outline" className="w-full">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      Schedule Warranty Service
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Machine Information */}

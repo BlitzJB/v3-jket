@@ -80,6 +80,8 @@ export class ReminderService {
       const daysUntilService = differenceInDays(nextServiceDue, new Date())
       const healthScore = WarrantyHelper.getHealthScore(machine)
       const totalSavings = WarrantyHelper.getTotalSavings(machine)
+      const warrantyActive = WarrantyHelper.isWarrantyActive(machine)
+      const warrantyExpiry = WarrantyHelper.getWarrantyExpiryDate(machine)
       
       // Generate direct link to service request page
       const scheduleUrl = `${process.env.NEXT_PUBLIC_APP_URL}/machines/${machine.serialNumber}/service-request?source=warranty-reminder`
@@ -92,6 +94,8 @@ export class ReminderService {
         daysUntilService,
         healthScore,
         totalSavings,
+        warrantyActive,
+        warrantyExpiryDate: warrantyExpiry,
         scheduleUrl
       })
       
@@ -122,6 +126,8 @@ export class ReminderService {
             daysUntilService,
             healthScore,
             urgency,
+            warrantyActive,
+            warrantyExpiryDate: warrantyExpiry?.toISOString(),
             sentTo: machine.sale.customerEmail
           }
         }
@@ -163,6 +169,8 @@ export class ReminderService {
       const daysUntilService = differenceInDays(nextServiceDue, new Date())
       const healthScore = WarrantyHelper.getHealthScore(machine)
       const totalSavings = WarrantyHelper.getTotalSavings(machine)
+      const warrantyActive = WarrantyHelper.isWarrantyActive(machine)
+      const warrantyExpiry = WarrantyHelper.getWarrantyExpiryDate(machine)
 
       // Generate direct link to service request page
       const scheduleUrl = `${process.env.NEXT_PUBLIC_APP_URL}/machines/${machine.serialNumber}/service-request?source=warranty-reminder`
@@ -175,6 +183,8 @@ export class ReminderService {
         daysUntilService,
         healthScore,
         totalSavings,
+        warrantyActive,
+        warrantyExpiryDate: warrantyExpiry,
         scheduleUrl
       })
 
