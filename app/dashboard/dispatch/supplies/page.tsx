@@ -9,11 +9,7 @@ import Link from "next/link"
 async function getSuppliesData() {
   return withPermission("dispatch:read", async () => {
     const supplies = await prisma.supply.findMany({
-      where: {
-        machine: {
-          isNot: null
-        }
-      },
+      where: {},
       include: {
         machine: {
           include: {
