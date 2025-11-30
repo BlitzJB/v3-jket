@@ -7,7 +7,7 @@ import { DataTable } from "@/components/ui/data-table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil, File, User, Phone, Mail, Trash2 } from "lucide-react"
+import { Search, Eye, Building2, Globe, Calendar, MoreVertical, Pencil, File, User, Phone, Mail, Trash2, Undo2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,16 +84,18 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
   const [supplies, setSupplies] = useState<Supply[]>(initialSupplies)
   const [search, setSearch] = useState('')
   const [supplyToDelete, setSupplyToDelete] = useState<Supply | null>(null)
+  const [supplyToReverse, setSupplyToReverse] = useState<Supply | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isReversing, setIsReversing] = useState(false)
   const [supplyDeletionStatus, setSupplyDeletionStatus] = useState<Record<string, { canDelete: boolean, dependencies: string[] }>>({})
   const { generatePdf } = usePdfGenerator()
-  
-  // Check if user is SUPER_ADMIN
-  const isSuperAdmin = usePermission('*')
 
-  // Check deletion status for all supplies (only for SUPER_ADMIN)
+  // Check if user has dispatch:manage permission (ADMIN or DISPATCH_MANAGER)
+  const canManageDispatch = usePermission('dispatch:manage')
+
+  // Check deletion status for all supplies (only for users with dispatch:manage permission)
   useEffect(() => {
-    if (!isSuperAdmin) return
+    if (!canManageDispatch) return
 
     const checkDeletionStatus = async () => {
       const statusMap: Record<string, { canDelete: boolean, dependencies: string[] }> = {}
@@ -118,7 +120,7 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
     }
     
     checkDeletionStatus()
-  }, [supplies, isSuperAdmin])
+  }, [supplies, canManageDispatch])
 
   const filteredSupplies = supplies.filter((supply) => {
     const searchLower = search.toLowerCase()
@@ -140,7 +142,7 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
   }
 
   const handleDeleteSupply = async (supply: Supply) => {
-    if (!isSuperAdmin) {
+    if (!canManageDispatch) {
       toast.error('You do not have permission to delete supplies')
       return
     }
@@ -172,6 +174,36 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
     } finally {
       setIsDeleting(false)
       setSupplyToDelete(null)
+    }
+  }
+
+  const handleReverseSale = async (supply: Supply) => {
+    if (!canManageDispatch) {
+      toast.error('You do not have permission to reverse D2C sales')
+      return
+    }
+
+    setIsReversing(true)
+    try {
+      const response = await fetch(`/api/dispatch/supplies/${supply.id}/reverse-sale`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to reverse D2C sale')
+      }
+
+      // Remove supply from local state
+      setSupplies(prev => prev.filter(s => s.id !== supply.id))
+      toast.success('D2C sale reversed successfully. Machine returned to inventory.')
+      router.refresh()
+    } catch (error) {
+      console.error('Error reversing D2C sale:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to reverse D2C sale')
+    } finally {
+      setIsReversing(false)
+      setSupplyToReverse(null)
     }
   }
 
@@ -378,13 +410,37 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit Supply
               </DropdownMenuItem>
-              {isSuperAdmin && (
+              {canManageDispatch && (
                 <>
                   <DropdownMenuSeparator />
+                  {isDirectToCustomer(row.original) && row.original.machine.sale && (
+                    <DropdownMenuItem
+                      className={`cursor-pointer ${
+                        dependencies.length > 0 && dependencies.some(d => d !== "sale record")
+                          ? "opacity-50 cursor-not-allowed text-muted-foreground"
+                          : "text-orange-600 focus:text-orange-600"
+                      }`}
+                      onClick={() => {
+                        const hasBlockingDependencies = dependencies.some(d => d !== "sale record")
+                        if (!hasBlockingDependencies) {
+                          setSupplyToReverse(row.original)
+                        }
+                      }}
+                      disabled={dependencies.length > 0 && dependencies.some(d => d !== "sale record")}
+                      title={
+                        dependencies.length > 0 && dependencies.some(d => d !== "sale record")
+                          ? `Cannot reverse: machine has ${dependencies.filter(d => d !== "sale record").join(", ")}`
+                          : "Reverse D2C sale and return machine to inventory"
+                      }
+                    >
+                      <Undo2 className="mr-2 h-4 w-4" />
+                      Reverse D2C Sale
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     className={`cursor-pointer ${
-                      !canDelete 
-                        ? "opacity-50 cursor-not-allowed text-muted-foreground" 
+                      !canDelete
+                        ? "opacity-50 cursor-not-allowed text-muted-foreground"
                         : "text-destructive focus:text-destructive"
                     }`}
                     onClick={() => {
@@ -394,8 +450,8 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
                     }}
                     disabled={!canDelete}
                     title={
-                      !canDelete && dependencies.length > 0 
-                        ? `Cannot delete: machine has ${dependencies.join(", ")}` 
+                      !canDelete && dependencies.length > 0
+                        ? `Cannot delete: machine has ${dependencies.join(", ")}`
                         : undefined
                     }
                   >
@@ -460,6 +516,51 @@ export function SupplyTable({ initialSupplies }: SupplyTableProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? "Deleting..." : "Delete Supply"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reverse D2C Sale Confirmation Dialog */}
+      <AlertDialog open={!!supplyToReverse} onOpenChange={() => setSupplyToReverse(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reverse D2C Sale</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reverse the D2C sale for machine{" "}
+              <strong>{supplyToReverse?.machine.serialNumber}</strong>?
+              <br />
+              <br />
+              This will remove both:
+              <ul className="list-disc list-inside mt-2 mb-2">
+                <li>The supply record</li>
+                <li>The sale record with customer information</li>
+              </ul>
+              <strong>The machine will be returned to inventory</strong> for future dispatch.
+              {supplyToReverse?.machine.sale && (
+                <>
+                  <br />
+                  <br />
+                  <strong>Customer:</strong> {supplyToReverse.machine.sale.customerName}
+                  <br />
+                  <strong>Contact:</strong> {supplyToReverse.machine.sale.customerContactPersonName}
+                </>
+              )}
+              <br />
+              <br />
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isReversing}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => supplyToReverse && handleReverseSale(supplyToReverse)}
+              disabled={isReversing}
+              className="bg-orange-600 text-white hover:bg-orange-700"
+            >
+              {isReversing ? "Reversing..." : "Reverse Sale"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

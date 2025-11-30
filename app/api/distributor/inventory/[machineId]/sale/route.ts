@@ -14,15 +14,24 @@ export async function POST(
     }
 
     const { machineId } = await params
-    const { 
-      customerName, 
+    const {
+      customerName,
       customerContactPersonName,
       customerEmail,
-      customerPhoneNumber, 
-      customerAddress, 
+      customerPhoneNumber,
+      customerAddress,
       distributorInvoiceNumber,
-      saleDate 
+      saleDate
     } = await req.json()
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!customerEmail || !emailRegex.test(customerEmail)) {
+      return Response.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      )
+    }
 
     // Verify the machine belongs to this distributor and is available
     const machine = await prisma.machine.findFirst({

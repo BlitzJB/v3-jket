@@ -10,6 +10,7 @@ import { render } from '@react-email/render'
 import { WelcomeEmail } from '@/components/emails/welcome-email'
 import { transporter, emailConfig } from '@/lib/email/config'
 import { createElement } from 'react'
+import { encryptPassword } from '@/lib/crypto/edge-encryption'
 
 const createUserSchema = z.object({
   email: z.string().email(),
@@ -42,12 +43,14 @@ export async function POST(request: Request) {
       }
 
       const hashedPassword = await bcrypt.hash(body.password, 12)
+      const encryptedTempPassword = await encryptPassword(body.password)
 
       const user = await prisma.user.create({
         data: {
           ...body,
           password: hashedPassword,
           approved: isSuperAdmin, // Only auto-approve users created by SUPER_ADMIN
+          encryptedTemporaryPassword: isSuperAdmin ? null : encryptedTempPassword, // Only store if needs approval
         },
         select: {
           id: true,
@@ -62,27 +65,29 @@ export async function POST(request: Request) {
         },
       })
 
-      // Send welcome email
-      try {
-        const loginUrl = 'https://care.jket.in/auth/login'
-        const emailHtml = await render(
-          createElement(WelcomeEmail, {
-            name: body.name,
-            email: body.email,
-            password: body.password, // Send the original (non-hashed) password
-            loginUrl: loginUrl,
-          })
-        )
+      // Send welcome email only if auto-approved (created by SUPER_ADMIN)
+      if (isSuperAdmin) {
+        try {
+          const loginUrl = 'https://care.jket.in/auth/login'
+          const emailHtml = await render(
+            createElement(WelcomeEmail, {
+              name: body.name,
+              email: body.email,
+              password: body.password, // Send the original (non-hashed) password
+              loginUrl: loginUrl,
+            })
+          )
 
-        await transporter.sendMail({
-          from: emailConfig.from,
-          to: body.email,
-          subject: 'Welcome to JKET Prime Care - Your Login Credentials',
-          html: emailHtml,
-        })
-      } catch (emailError) {
-        console.error('Failed to send welcome email:', emailError)
-        // Don't fail the request if email sending fails
+          await transporter.sendMail({
+            from: emailConfig.from,
+            to: body.email,
+            subject: 'Welcome to JKET Prime Care - Your Login Credentials',
+            html: emailHtml,
+          })
+        } catch (emailError) {
+          console.error('Failed to send welcome email:', emailError)
+          // Don't fail the request if email sending fails
+        }
       }
 
       return NextResponse.json(user)

@@ -28,4 +28,4 @@ export const transporter = nodemailer.createTransport({
     user: SMTP_USER,
     pass: SMTP_PASS,
   },
-}) 
+})

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, use } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -13,7 +13,7 @@ import { format } from "date-fns"
 interface Machine {
   id: string
   serialNumber: string
-  manufacturingDate: Date
+  manufacturingDate: string
   machineModel: {
     name: string
     category: {
@@ -21,8 +21,8 @@ interface Machine {
     }
   }
   supply: {
-    supplyDate: Date
-    sellBy: Date
+    supplyDate: string
+    sellBy: string
   }
 }
 
@@ -49,14 +49,14 @@ export default function LogSalePage({
   const [distributorInvoiceNumber, setDistributorInvoiceNumber] = useState("")
 
   // Load machine data
-  useState(() => {
+  useEffect(() => {
     getMachineData(machineId)
       .then(setMachine)
       .catch(() => {
         toast.error("Failed to load machine data")
         router.push("/dashboard/distributor/inventory")
       })
-  })
+  }, [machineId, router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

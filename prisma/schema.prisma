@@ -39,6 +39,7 @@ model User {
   organizationName String?
   phoneNumber      String?
   region           String?
+  encryptedTemporaryPassword String? // Stores encrypted password until user is approved
   accounts         Account[]
   serviceVisits    ServiceVisit[]
   supplies         Supply[]

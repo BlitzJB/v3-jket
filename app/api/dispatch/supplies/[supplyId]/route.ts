@@ -294,7 +294,7 @@ export async function DELETE(
 ) {
   const { supplyId } = await params
 
-  return withPermission('*', async () => {
+  return withPermission('dispatch:manage', async () => {
     try {
       // Check if supply exists with all related data
       const supply = await prisma.supply.findUnique({
