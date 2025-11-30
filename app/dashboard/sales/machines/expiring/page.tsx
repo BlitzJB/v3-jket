@@ -15,9 +15,6 @@ async function getExpiringMachinesData() {
           gt: today,
           lte: thirtyDaysFromNow
         },
-        machine: {
-          isNot: null
-        },
         distributor: {
           name: {
             not: null

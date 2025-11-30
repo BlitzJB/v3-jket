@@ -13,6 +13,7 @@ import {
   Wrench,
   Factory,
   LineChart,
+  Mail,
 } from "lucide-react"
 
 // Navigation items for the admin dashboard
@@ -31,6 +32,11 @@ const adminNavItems = [
     title: "User Management",
     href: "/dashboard/admin/users",
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    title: "Warranty Reminders",
+    href: "/dashboard/admin/reminders",
+    icon: <Mail className="h-4 w-4" />,
   },
   {
     title: "Equipment",

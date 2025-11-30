@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -19,37 +13,36 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
 model User {
-  id               String    @id @default(cuid())
+  id               String         @id @default(cuid())
   name             String?
-  email            String?   @unique
+  email            String?        @unique
   emailVerified    DateTime?
   image            String?
+  role             String         @default("USER")
   password         String?
-  role             String    @default("USER")
-  approved         Boolean   @default(false)
+  approved         Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now()) @updatedAt
+  organizationName String?
   phoneNumber      String?
   region           String?
-  organizationName String?
   encryptedTemporaryPassword String? // Stores encrypted password until user is approved
   accounts         Account[]
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @default(now()) @updatedAt
-  supplies         Supply[]
   serviceVisits    ServiceVisit[]
+  supplies         Supply[]
 }
 
 model VerificationToken {
@@ -61,14 +54,14 @@ model VerificationToken {
 }
 
 model Category {
-  id               String         @id @default(cuid())
-  name             String
-  shortCode        String
-  description      String?
+  id                String         @id @default(cuid())
+  name              String
+  shortCode         String
+  description       String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   testConfiguration Json?
-  machineModels    MachineModel[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  machineModels     MachineModel[]
 }
 
 model MachineModel {
@@ -78,83 +71,139 @@ model MachineModel {
   description          String?
   warrantyPeriodMonths Int
   coverImageUrl        String?
+  categoryId           String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
   catalogueFileUrl     String?
   userManualFileUrl    String?
   machines             Machine[]
-  categoryId           String
   category             Category  @relation(fields: [categoryId], references: [id])
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
 }
 
 model Machine {
-  id                  String           @id @default(cuid())
+  id                  String               @id @default(cuid())
   serialNumber        String
   machineModelId      String
-  machineModel        MachineModel     @relation(fields: [machineModelId], references: [id])
   manufacturingDate   DateTime
-  testResultData      Json
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   testAdditionalNotes String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  supplyId            String?
-  supply              Supply?
+  testResultData      Json
   returnId            String?
-  return              Return?
+  supplyId            String?
   saleId              String?
+  machineModel        MachineModel         @relation(fields: [machineModelId], references: [id])
+  return              Return?
   sale                Sale?
   serviceRequests     ServiceRequest[]
+  supply              Supply?
   warrantyCertificate WarrantyCertificate?
+  actionLogs          ActionLog[]
 }
 
 model Supply {
   id            String   @id @default(cuid())
   machineId     String   @unique
-  machine       Machine? @relation(fields: [machineId], references: [id])
   supplyDate    DateTime @default(now())
-  sellBy        DateTime // by default 6 month from supply date
+  sellBy        DateTime
   distributorId String
-  distributor   User     @relation(fields: [distributorId], references: [id])
-  notes         String?  @default("") @db.Text
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  notes         String?  @default("")
+  distributor   User     @relation(fields: [distributorId], references: [id])
+  machine       Machine  @relation(fields: [machineId], references: [id])
 }
 
 model Return {
   id           String   @id @default(cuid())
   machineId    String   @unique
-  machine      Machine  @relation(fields: [machineId], references: [id])
   returnDate   DateTime
   returnReason String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  machine      Machine  @relation(fields: [machineId], references: [id])
 }
 
 model Sale {
-  id                      String   @id @default(cuid())
-  machineId               String   @unique
-  machine                 Machine  @relation(fields: [machineId], references: [id])
-  saleDate                DateTime
-  customerName            String
-  customerContactPersonName String  @default("")
-  customerEmail           String   @default("")
-  customerPhoneNumber     String
-  customerAddress         String
-  distributorInvoiceNumber String?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  id                        String   @id @default(cuid())
+  machineId                 String   @unique
+  saleDate                  DateTime
+  customerName              String
+  customerPhoneNumber       String
+  customerAddress           String
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  customerContactPersonName String   @default("")
+  customerEmail             String   @default("")
+  distributorInvoiceNumber  String?
+  reminderOptOut            Boolean  @default(false)
+  whatsappNumber            String?  @default("")
+  machine                   Machine  @relation(fields: [machineId], references: [id])
 }
 
 model ServiceRequest {
   id             String        @id @default(cuid())
   machineId      String
-  machine        Machine       @relation(fields: [machineId], references: [id])
   serviceVisitId String?       @unique
-  serviceVisit   ServiceVisit?
   complaint      String?
-  attachments    Json?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+  attachments    Json?
+  machine        Machine       @relation(fields: [machineId], references: [id])
+  serviceVisit   ServiceVisit?
+}
+
+model ServiceVisit {
+  id                   String                @id @default(cuid())
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  serviceRequestId     String                @unique
+  serviceVisitDate     DateTime
+  serviceVisitNotes    String?
+  status               ServiceRequestStatus  @default(PENDING)
+  engineerId           String?
+  totalCost            Float?
+  typeOfIssue          String?
+  customerSupportNotes String?               @default("")
+  engineer             User?                 @relation(fields: [engineerId], references: [id])
+  serviceRequest       ServiceRequest        @relation(fields: [serviceRequestId], references: [id])
+  comments             ServiceVisitComment[]
+}
+
+model ServiceVisitComment {
+  id             String       @id @default(cuid())
+  serviceVisitId String
+  comment        String
+  attachments    Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  serviceVisit   ServiceVisit @relation(fields: [serviceVisitId], references: [id])
+}
+
+model WarrantyCertificate {
+  id        String   @id @default(cuid())
+  machineId String   @unique
+  name      String
+  address   String
+  state     String
+  zipCode   String
+  country   String   @default("India")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  machine   Machine  @relation(fields: [machineId], references: [id])
+}
+
+model ActionLog {
+  id         String   @id @default(cuid())
+  machineId  String
+  actionType String
+  channel    String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  machine    Machine  @relation(fields: [machineId], references: [id])
+
+  @@index([machineId, actionType, createdAt])
+  @@index([createdAt])
 }
 
 enum ServiceRequestStatus {
@@ -162,45 +211,5 @@ enum ServiceRequestStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
-  CLOSED // Can only be closed by customer service
-}
-
-model ServiceVisit {
-  id                String                @id @default(cuid())
-  serviceRequestId  String                @unique
-  serviceRequest    ServiceRequest        @relation(fields: [serviceRequestId], references: [id])
-  serviceVisitDate  DateTime
-  serviceVisitNotes String?
-  customerSupportNotes String? @default("")
-  status            ServiceRequestStatus  @default(PENDING)
-  comments          ServiceVisitComment[]
-  engineerId        String?
-  engineer          User?                 @relation(fields: [engineerId], references: [id])
-  totalCost         Float?
-  typeOfIssue       String?
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
-}
-
-model ServiceVisitComment {
-  id             String       @id @default(cuid())
-  serviceVisitId String
-  serviceVisit   ServiceVisit @relation(fields: [serviceVisitId], references: [id])
-  comment        String
-  attachments    Json
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-}
-
-model WarrantyCertificate {
-  id String @id @default(cuid())
-  machineId String @unique
-  machine Machine @relation(fields: [machineId], references: [id])
-  name String
-  address String
-  state String
-  zipCode String
-  country String @default("India")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  CLOSED
 }

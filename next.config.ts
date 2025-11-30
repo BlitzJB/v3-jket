@@ -18,13 +18,15 @@ const nextConfig: NextConfig = {
   // Force all pages to be dynamic instead of statically generated
   experimental: {
     serverActions: {
-      allowedOrigins: process.env.ALLOWED_ORIGINS 
+      allowedOrigins: process.env.ALLOWED_ORIGINS
         ? process.env.ALLOWED_ORIGINS.split(',')
         : ['localhost:3000'],
     },
+    // Note: instrumentationHook is enabled by default in Next.js 15+
+    // instrumentation.ts will be used automatically
   },
   // This is the key configuration to make all pages dynamic
-  
+
   // Force ISR/dynamic rendering for all pages
   env: {
     // Dynamic rendering settings
