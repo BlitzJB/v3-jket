@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: jket-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -18,6 +19,7 @@ services:
 
   minio:
     image: minio/minio:latest
+    container_name: jket-minio
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -34,19 +36,23 @@ services:
     # No ports exposed - only accessible within internal network
 
   pdf-service:
-    image: blitzjb/pdf-service:latest
+    build:
+      context: ./pdf-service
+      dockerfile: Dockerfile
+    container_name: jket-pdf-service
     environment:
       PORT: 3000
     networks:
       - internal
+    restart: unless-stopped
     # No ports exposed - only accessible within internal network
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"  # Only the app is exposed to the host
+    container_name: jket-app
+    # No ports exposed - will be accessed via nginx reverse proxy
     environment:
       # Database
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/v3-jket
@@ -71,6 +77,8 @@ services:
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-JKET Prime Care}
 
       # Auth
+      AUTH_SECRET: ${NEXTAUTH_SECRET}
+      AUTH_TRUST_HOST: "true"
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
 
@@ -88,6 +96,7 @@ services:
         condition: service_started
     networks:
       - internal
+      - proxy_network
     restart: unless-stopped
 
 networks:
@@ -95,6 +104,9 @@ networks:
     driver: bridge
     # This creates an isolated network - services can only communicate
     # with each other using service names as hostnames
+  proxy_network:
+    external: true
+    name: monitoring_frontend
 
 volumes:
   postgres_data:
