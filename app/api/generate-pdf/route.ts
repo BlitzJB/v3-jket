@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const PDF_SERVICE_URL = process.env.PDF_SERVICE_URL || 'http://localhost:3002'
+
 export async function POST(request: NextRequest) {
   try {
     // Get the request body
     const body = await request.json()
-    
-    // Forward the request to the local PDF service
-    const response = await fetch('http://localhost:3002/generate-pdf', {
+
+    // Forward the request to the PDF service
+    const response = await fetch(`${PDF_SERVICE_URL}/generate-pdf`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
