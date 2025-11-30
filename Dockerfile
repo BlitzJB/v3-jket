@@ -25,6 +25,12 @@ RUN corepack enable pnpm
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Set dummy environment variables for build time
+# These are overridden at runtime by docker-compose
+ENV AUTH_SECRET="build-time-placeholder"
+ENV NEXTAUTH_SECRET="build-time-placeholder"
+ENV DATABASE_URL="postgresql://placeholder:placeholder@placeholder:5432/placeholder"
+
 # Generate Prisma client
 RUN pnpm prisma generate
 
@@ -42,15 +48,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built application
+# Copy built application (standalone includes necessary node_modules)
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema for migrations (if needed)
+# Copy Prisma schema for runtime migrations
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 USER nextjs
 

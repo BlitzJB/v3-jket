@@ -5,173 +5,52 @@ Deploy the JKET application with Docker, including the warranty reminder cron sy
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Docker Compose                           │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │  postgres   │  │    minio    │  │    pdf-service      │ │
-│  │  :5432      │  │  :9090/:9091│  │    :3002            │ │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │                   jket-app                              ││
-│  │                   :3000                                 ││
-│  │  ┌───────────────────────────────────────────────────┐ ││
-│  │  │  node-cron scheduler (runs inside Next.js)        │ ││
-│  │  │  - daily-reminders: 9 AM IST                      │ ││
-│  │  │  - weekly-health-check: Sunday 2 AM IST           │ ││
-│  │  └───────────────────────────────────────────────────┘ ││
-│  └─────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
+                           ┌──────────────────────────────────┐
+                           │          Host Machine            │
+                           │                                  │
+                           │    Only port 3000 is exposed     │
+                           └──────────────┬───────────────────┘
+                                          │ :3000
+                                          ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Docker Internal Network                              │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                          app (Next.js)                              │   │
+│  │                          :3000 (exposed)                            │   │
+│  │  ┌───────────────────────────────────────────────────────────────┐ │   │
+│  │  │  node-cron scheduler                                          │ │   │
+│  │  │  - daily-reminders: 9 AM IST                                  │ │   │
+│  │  │  - weekly-health-check: Sunday 2 AM IST                       │ │   │
+│  │  └───────────────────────────────────────────────────────────────┘ │   │
+│  └────────────────────────────┬────────────────────────────────────────┘   │
+│                               │                                             │
+│         ┌─────────────────────┼─────────────────────┐                      │
+│         │                     │                     │                      │
+│         ▼                     ▼                     ▼                      │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────────┐            │
+│  │  postgres   │      │    minio    │      │   pdf-service   │            │
+│  │  :5432      │      │  :9000      │      │   :3000         │            │
+│  │  (internal) │      │  (internal) │      │   (internal)    │            │
+│  └─────────────┘      └─────────────┘      └─────────────────┘            │
+│                                                                             │
+│  All internal services communicate via Docker DNS:                         │
+│  - postgres:5432                                                           │
+│  - minio:9000                                                              │
+│  - pdf-service:3000                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## How Cron Works
+## Security Benefits
 
-The cron system uses `node-cron` which runs **inside** the Next.js process:
-
-1. When the container starts, Next.js runs `instrumentation.ts`
-2. This initializes the `cronScheduler` singleton
-3. Jobs run at scheduled times within the same process
-4. No external cron daemon needed
+- **Only port 3000 is exposed** - The Next.js app is the only entry point
+- **Internal services are isolated** - PostgreSQL, MinIO, and PDF service are not accessible from outside
+- **Service-to-service communication** uses Docker's internal DNS (e.g., `postgres:5432`)
+- **No direct database access** from outside the container network
 
 ## Quick Start
 
-### 1. Create the Dockerfile
-
-```dockerfile
-# Dockerfile
-FROM node:20-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-
-COPY package.json pnpm-lock.yaml* ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
-
-# Build the application
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-RUN corepack enable pnpm && pnpm prisma generate && pnpm build
-
-# Production image
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-CMD ["node", "server.js"]
-```
-
-### 2. Update next.config.ts for standalone output
-
-```typescript
-// next.config.ts
-const nextConfig = {
-  output: 'standalone',
-  experimental: {
-    instrumentationHook: true,
-  },
-}
-
-export default nextConfig
-```
-
-### 3. Update docker-compose.yml
-
-```yaml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: v3-jket
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  minio:
-    image: minio/minio:latest
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    ports:
-      - "9090:9000"
-      - "9091:9001"
-    volumes:
-      - minio_data:/data
-    command: server /data --console-address ":9001"
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  pdf-service:
-    image: blitzjb/pdf-service:latest
-    ports:
-      - "3002:3000"
-    environment:
-      PORT: 3000
-
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/v3-jket
-      SMTP_HOST: smtp.gmail.com
-      SMTP_PORT: 587
-      SMTP_SECURE: "false"
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-      SMTP_FROM_NAME: "JKET Prime Care"
-      CRON_SECRET: ${CRON_SECRET}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      TZ: Asia/Kolkata
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  minio_data:
-```
-
-### 4. Create .env file
+### 1. Create `.env` file
 
 ```bash
 # .env
@@ -182,72 +61,80 @@ NEXTAUTH_SECRET=your-nextauth-secret
 NEXTAUTH_URL=http://localhost:3000
 ```
 
-### 5. Deploy
+### 2. Build and start all services
 
 ```bash
-# Build and start all services
+# Production mode (only app exposed)
 docker-compose up -d --build
 
-# Run migrations (first time only)
-docker-compose exec app npx prisma migrate deploy
+# Wait for services to be healthy
+docker-compose ps
 
-# Check logs
-docker-compose logs -f app
+# Run database migrations (first time only)
+docker-compose exec app npx prisma migrate deploy
 ```
 
-## Verifying Cron is Running
+### 3. Verify everything is running
 
-### Check startup logs
+```bash
+# Check all services
+docker-compose ps
 
+# Check cron scheduler initialized
+docker-compose logs app | grep -E "(cron|Scheduled)"
+
+# Test the app
+curl http://localhost:3000
+```
+
+## Development Mode
+
+For local development, you may want to access services directly (e.g., MinIO console, direct DB access):
+
+```bash
+# Start with exposed service ports
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+This exposes:
+- `localhost:3000` - Next.js app
+- `localhost:5432` - PostgreSQL (for Prisma Studio, pgAdmin, etc.)
+- `localhost:9090` - MinIO API
+- `localhost:9091` - MinIO Console
+- `localhost:3002` - PDF Service
+
+## How Cron Works
+
+The cron system uses `node-cron` which runs **inside** the Next.js container:
+
+1. When the container starts, Next.js runs `instrumentation.ts`
+2. This initializes the `cronScheduler` singleton
+3. Jobs run at scheduled times within the same process
+4. No external cron daemon needed
+
+### Verify Cron is Running
+
+Check startup logs:
 ```bash
 docker-compose logs app | grep -E "(cron|Scheduled|scheduler)"
 ```
 
-You should see:
+Expected output:
 ```
 🚀 Initializing cron scheduler via instrumentation...
 🔄 Initializing cron scheduler...
 ✅ Scheduled job: daily-reminders (0 9 * * *)
 ✅ Scheduled job: weekly-health-check (0 2 * * 0)
 ✅ Cron scheduler initialized
-
-📅 Scheduled Jobs:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  • daily-reminders
-    Schedule: 0 9 * * *
-    Next run: 12/2/2025, 9:00:00 AM
-  • weekly-health-check
-    Schedule: 0 2 * * 0
-    Next run: 12/8/2025, 2:00:00 AM
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Check cron status via API
+### Check Cron Status via API
 
 ```bash
 curl http://localhost:3000/api/cron/status
 ```
 
-Response:
-```json
-{
-  "success": true,
-  "jobs": [
-    {
-      "jobName": "daily-reminders",
-      "schedule": "0 9 * * *",
-      "lastRun": null,
-      "lastSuccess": null,
-      "totalRuns": 0,
-      "totalSuccess": 0,
-      "isRunning": false,
-      "nextRun": "2025-12-02T03:30:00.000Z"
-    }
-  ]
-}
-```
-
-### Manually trigger a job (for testing)
+### Manually Trigger a Job
 
 ```bash
 curl -X POST http://localhost:3000/api/cron/status \
@@ -255,35 +142,53 @@ curl -X POST http://localhost:3000/api/cron/status \
   -d '{"jobName": "daily-reminders", "secret": "your-cron-secret"}'
 ```
 
+## Internal Network Communication
+
+### How services connect (inside Docker):
+
+| From | To | URL |
+|------|-----|-----|
+| app | PostgreSQL | `postgresql://postgres:postgres@postgres:5432/v3-jket` |
+| app | MinIO | `minio:9000` |
+| app | PDF Service | `http://pdf-service:3000` |
+
+### Environment Variables (set automatically in docker-compose.yml):
+
+```yaml
+# Database
+DATABASE_URL: postgresql://postgres:postgres@postgres:5432/v3-jket
+
+# MinIO
+MINIO_ENDPOINT: minio
+MINIO_PORT: 9000
+
+# PDF Service
+PDF_SERVICE_URL: http://pdf-service:3000
+```
+
 ## Monitoring
 
-### View real-time logs
+### View logs
 
 ```bash
-# All logs
+# All services
+docker-compose logs -f
+
+# Just the app
 docker-compose logs -f app
 
 # Filter for cron activity
 docker-compose logs -f app 2>&1 | grep -E "(cron|reminder|📧|✅|❌)"
 ```
 
-### Check when cron runs
+### Check service health
 
-When the daily reminder job executes at 9 AM, you'll see:
-```
-============================================================
-🔄 Running cron job: daily-reminders
-   Time: 2025-12-02T03:30:00.000Z
-   Run #1
-============================================================
-📧 Starting daily reminder processing...
-Found 5 machines to check for reminders
-✅ Sent 3 reminders
-✅ Sent 3 warranty reminders
-✅ Cron job 'daily-reminders' completed successfully
-   Result: { success: true, remindersSent: 3 }
-   Next run: 12/3/2025, 9:00:00 AM
-============================================================
+```bash
+# All services status
+docker-compose ps
+
+# Detailed health info
+docker-compose ps --format json | jq
 ```
 
 ### Query reminder history
@@ -297,91 +202,74 @@ docker-compose exec postgres psql -U postgres -d v3-jket -c \
    LIMIT 10;"
 ```
 
-## Timezone Configuration
-
-The cron scheduler is configured for `Asia/Kolkata` (IST). To change:
-
-1. Update `lib/cron/scheduler.ts`:
-```typescript
-{
-  timezone: 'Asia/Kolkata'  // Change this
-}
-```
-
-2. Update docker-compose.yml:
-```yaml
-environment:
-  TZ: Asia/Kolkata  # Change this
-```
-
-3. Rebuild: `docker-compose up -d --build`
-
 ## Troubleshooting
 
-### Cron not initializing?
+### App can't connect to database?
 
-Check if instrumentation hook is enabled in `next.config.ts`:
-```typescript
-experimental: {
-  instrumentationHook: true,
-}
-```
-
-### Jobs not running at scheduled time?
-
-1. Check timezone:
 ```bash
-docker-compose exec app date
+# Check postgres is healthy
+docker-compose ps postgres
+
+# Check network connectivity
+docker-compose exec app ping postgres
+
+# View postgres logs
+docker-compose logs postgres
 ```
 
-2. Verify the schedule in logs:
+### App can't connect to MinIO?
+
 ```bash
-docker-compose logs app | grep "Next run"
+# Check minio is healthy
+docker-compose ps minio
+
+# Test from app container
+docker-compose exec app wget -q -O- http://minio:9000/minio/health/live
 ```
 
-### Container restarting?
+### Cron not running?
 
-Check for errors:
 ```bash
-docker-compose logs --tail=100 app
+# Check if instrumentation hook ran
+docker-compose logs app | grep "instrumentation"
+
+# Verify scheduler is initialized
+docker-compose logs app | grep "Scheduled"
 ```
 
-### Database connection issues?
+### Rebuild after code changes
 
-Ensure postgres is healthy before app starts:
 ```bash
-docker-compose ps
-```
+# Rebuild and restart
+docker-compose up -d --build
 
-The `depends_on` with `condition: service_healthy` ensures proper startup order.
+# Or just rebuild app
+docker-compose build app && docker-compose up -d app
+```
 
 ## Production Considerations
 
-### 1. Use Docker secrets for sensitive data
+### 1. Use secrets for sensitive data
 
-```yaml
-services:
-  app:
-    secrets:
-      - smtp_pass
-      - cron_secret
-
-secrets:
-  smtp_pass:
-    file: ./secrets/smtp_pass.txt
-  cron_secret:
-    file: ./secrets/cron_secret.txt
+```bash
+# Create secrets
+echo "your-smtp-password" | docker secret create smtp_pass -
+echo "your-cron-secret" | docker secret create cron_secret -
 ```
 
-### 2. Add health check to app service
+### 2. Add resource limits
 
 ```yaml
+# In docker-compose.yml
 app:
-  healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-    interval: 30s
-    timeout: 10s
-    retries: 3
+  deploy:
+    resources:
+      limits:
+        cpus: '2'
+        memory: 2G
+      reservations:
+        cpus: '0.5'
+        memory: 512M
 ```
 
 ### 3. Configure logging
@@ -391,22 +279,19 @@ app:
   logging:
     driver: "json-file"
     options:
-      max-size: "10m"
-      max-file: "3"
+      max-size: "50m"
+      max-file: "5"
 ```
 
-### 4. Resource limits
+### 4. Health checks
 
 ```yaml
 app:
-  deploy:
-    resources:
-      limits:
-        cpus: '1'
-        memory: 1G
-      reservations:
-        cpus: '0.5'
-        memory: 512M
+  healthcheck:
+    test: ["CMD", "wget", "-q", "-O-", "http://localhost:3000/api/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
 ```
 
 ## Commands Reference
@@ -415,19 +300,14 @@ app:
 # Start all services
 docker-compose up -d
 
-# Rebuild and start
+# Start with build
 docker-compose up -d --build
 
 # View logs
 docker-compose logs -f app
 
-# Check cron status
-curl http://localhost:3000/api/cron/status
-
-# Trigger job manually
-curl -X POST http://localhost:3000/api/cron/status \
-  -H "Content-Type: application/json" \
-  -d '{"jobName": "daily-reminders", "secret": "your-secret"}'
+# Check status
+docker-compose ps
 
 # Run migrations
 docker-compose exec app npx prisma migrate deploy
@@ -443,4 +323,7 @@ docker-compose down
 
 # Stop and remove volumes (WARNING: deletes data)
 docker-compose down -v
+
+# Development mode (exposed ports)
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
