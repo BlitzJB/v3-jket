@@ -271,7 +271,6 @@ export function ReminderAuditTable({ initialReminders }: ReminderAuditTableProps
       <DataTable
         columns={columns}
         data={filteredReminders}
-        searchable={false}
       />
 
       {filteredReminders.length === 0 && (

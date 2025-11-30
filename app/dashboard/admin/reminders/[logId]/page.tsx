@@ -59,9 +59,10 @@ async function getReminderDetails(logId: string) {
 export default async function ReminderDetailPage({
   params
 }: {
-  params: { logId: string }
+  params: Promise<{ logId: string }>
 }) {
-  const log = await getReminderDetails(params.logId)
+  const { logId } = await params
+  const log = await getReminderDetails(logId)
 
   if (!log) {
     notFound()
@@ -336,14 +337,14 @@ export default async function ReminderDetailPage({
                   </>
                 )}
 
-                {sale.customerPhone && (
+                {sale.customerPhoneNumber && (
                   <>
                     <Separator />
                     <div>
                       <div className="text-sm text-muted-foreground mb-1">Phone</div>
                       <div className="flex items-center gap-2">
                         <Phone className="h-3 w-3 text-primary/60" />
-                        <span className="font-medium">{sale.customerPhone}</span>
+                        <span className="font-medium">{sale.customerPhoneNumber}</span>
                       </div>
                     </div>
                   </>

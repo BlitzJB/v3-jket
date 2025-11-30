@@ -34,12 +34,12 @@ async function verifyPrismaClient() {
   console.log('\n2. Checking ActionLog model in Prisma Client...')
   try {
     const actionLogCreateInput: Prisma.ActionLogCreateInput = {
-      machineId: 'test-machine',
+      machine: { connect: { id: 'test-machine' } },
       actionType: 'TEST',
       channel: 'WEB',
       metadata: { test: true } // JSON field
     }
-    
+
     console.log('✅ ActionLog model exists in Prisma Client')
     console.log('✅ ActionLog has all required fields')
   } catch (error) {

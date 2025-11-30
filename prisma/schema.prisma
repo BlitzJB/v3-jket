@@ -97,6 +97,7 @@ model Machine {
   serviceRequests     ServiceRequest[]
   supply              Supply?
   warrantyCertificate WarrantyCertificate?
+  actionLogs          ActionLog[]
 }
 
 model Supply {
@@ -198,6 +199,7 @@ model ActionLog {
   channel    String
   metadata   Json?
   createdAt  DateTime @default(now())
+  machine    Machine  @relation(fields: [machineId], references: [id])
 
   @@index([machineId, actionType, createdAt])
   @@index([createdAt])
