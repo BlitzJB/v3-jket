@@ -10,6 +10,11 @@ export default async function DefaultDashboard() {
     redirect('/auth/login')
   }
 
+  // Check if user is approved before allowing dashboard access
+  if (!session.user.approved) {
+    redirect('/auth/pending-approval')
+  }
+
   if (session.user.role === 'ADMIN' || session.user.role === 'SUPER_ADMIN') {
     redirect('/dashboard/admin')
   }
