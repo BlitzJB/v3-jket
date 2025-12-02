@@ -35,13 +35,13 @@ export class ReminderService {
       )
       
       console.log(`Found ${machines.length} machines to check for reminders`)
-      
+
       for (const machine of machines) {
         // Check if warranty is still active
         if (!WarrantyHelper.isWarrantyActive(machine)) {
           continue
         }
-        
+
         // Check last reminder sent
         const lastReminder = await prisma.actionLog.findFirst({
           where: {
@@ -50,12 +50,12 @@ export class ReminderService {
           },
           orderBy: { createdAt: 'desc' }
         })
-        
+
         // Check if we should send today
         if (!WarrantyHelper.shouldSendReminder(machine, lastReminder?.createdAt)) {
           continue
         }
-        
+
         // Send reminder
         const sent = await this.sendReminder(machine)
         if (sent) sentCount++

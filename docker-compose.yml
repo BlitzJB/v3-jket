@@ -82,8 +82,18 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
 
+      # App URL for email links
+      NEXT_PUBLIC_APP_URL: ${NEXTAUTH_URL:-https://jkprimecare.com}
+
       # Cron
       CRON_SECRET: ${CRON_SECRET}
+
+      # Encryption
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+
+      # MinIO public access (for service attachments)
+      MINIO_PUBLIC_URL: https://jkprimecare.com/api/files
+      MINIO_PUBLIC_PATH: /api/files
 
       # Timezone
       TZ: Asia/Kolkata
