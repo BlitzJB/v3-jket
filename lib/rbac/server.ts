@@ -12,6 +12,12 @@ export async function hasPermission(permission: Permission): Promise<boolean> {
     return false
   }
 
+  // Check if user is approved before checking permissions
+  if (!session.user.approved) {
+    console.log("user not approved")
+    return false
+  }
+
   const userRole = session.user.role as UserRole
   console.log("userRole", userRole)
   if (!userRole || !ROLES[userRole]) {
